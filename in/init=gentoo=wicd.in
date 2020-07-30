@@ -1,8 +1,6 @@
-#!/sbin/runscript
-# Copyright 1999-2006 Gentoo Foundation
+#!/sbin/openrc-run
+# Copyright 1999-2020 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
-
-opts="start stop restart"
 
 WICD_DAEMON=%SBIN%wicd
 WICD_PIDFILE=%PIDFILE%
@@ -36,5 +34,5 @@ force_kill() {
 
 restart() {
 	force_kill
-	start
+	sve_start
 }
