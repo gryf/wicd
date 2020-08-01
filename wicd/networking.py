@@ -1113,12 +1113,12 @@ class Wired(Controller):
             self.liface.link_detect = value
 
     @property
-    def wired_iface(self):
+    def wired_interface(self):
         """Getter for wired_interface property."""
         return self._wired_interface
 
-    @wired_iface.setter
-    def wired_iface(self, value):
+    @wired_interface.setter
+    def wired_interface(self, value):
         """Setter for wired_interface property."""
         self._wired_interface = value
         if self.liface:
