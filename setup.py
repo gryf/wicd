@@ -437,7 +437,6 @@ class clear_generated(Command):
         for item in os.listdir('in'):
             if item.endswith('.in'):
                 print('Removing completed', item, end=' ')
-                original_name = os.path.join('in', item)
                 final_name = item[:-3].replace('=', '/')
                 print(final_name, '...', end=' ')
                 if os.path.exists(final_name):
@@ -483,43 +482,6 @@ class install(_install):
             (wpath.postconnectscripts, [empty_file])
         ])
 
-        if not wpath.no_install_gtk:
-            data.append((wpath.desktop, ['other/wicd.desktop']))
-            data.append((wpath.bin, ['scripts/wicd-client']))
-            data.append((wpath.bin, ['scripts/wicd-gtk']))
-            data.append((wpath.gtk, [
-                                     'gtk/wicd-client.py',
-                                     'gtk/netentry.py',
-                                     'gtk/prefs.py',
-                                     'gtk/gui.py',
-                                     'gtk/guiutil.py',
-                                     'data/wicd.ui',
-                                     'gtk/configscript.py',
-                                    ]))
-            data.append((wpath.autostart, ['other/wicd-tray.desktop']))
-            if not wpath.no_install_man:
-                data.append((wpath.mandir + 'man1/', ['man/wicd-client.1']))
-            for size in os.listdir('icons'):
-                for category in os.listdir(os.path.join('icons', size)):
-                    imgdir = os.path.join('icons', size, category)
-                    data.append((os.path.join(wpath.icons, size, category),
-                                 [(os.path.join(imgdir, f))
-                                  for f in os.listdir(imgdir)
-                                  if not f.startswith('.')]))
-            for size in os.listdir('images'):
-                for category in os.listdir(os.path.join('images', size)):
-                    imgdir = os.path.join('images', size, category)
-                    data.append((os.path.join(wpath.images, 'hicolor', size,
-                                              category),
-                                 [(os.path.join(imgdir, f))
-                                  for f in os.listdir(imgdir)
-                                  if not f.startswith('.')]))
-            data.append((wpath.pixmaps, ['other/wicd-gtk.xpm']))
-        if not wpath.no_install_gnome_shell_extensions:
-            data.append(
-                (wpath.gnome_shell_extensions + 'wicd@code.hanskalabs.net',
-                 ['gnome-shell/' + f for f in os.listdir('gnome-shell')])
-            )
         if not wpath.no_install_ncurses:
             data.append((wpath.curses, ['curses/curses_misc.py']))
             data.append((wpath.curses, ['curses/prefs_curses.py']))
@@ -548,9 +510,6 @@ class install(_install):
             data.append((wpath.docdir, ['INSTALL', 'LICENSE', 'AUTHORS',
                                         'README', 'CHANGES', ]))
             data.append((wpath.varlib, ['other/WHEREAREMYFILES']))
-        if not wpath.no_install_kde:
-            if not wpath.no_install_gtk:
-                data.append((wpath.kdedir, ['other/wicd-tray.desktop']))
         if not wpath.no_install_init:
             data.append((wpath.init, [wpath.initfile]))
         if not wpath.no_install_man:
