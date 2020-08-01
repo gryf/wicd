@@ -1,1 +1,1 @@
-""" Backends module. """
+"""Backends module."""

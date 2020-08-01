@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" prefs -- Wicd Preferences Dialog.
+"""prefs -- Wicd Preferences Dialog.
 
 Displays the main settings dialog window for wicd and
 handles recieving/sendings the settings from/to the daemon.
@@ -23,10 +23,14 @@ handles recieving/sendings the settings from/to the daemon.
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import os
 
 import gtk
 from gi.repository import GObject as gobject
-import os
+try:
+    import pynotify
+except ImportError:
+    pynotify = None
 
 from wicd import misc
 from wicd import wpath
@@ -42,7 +46,7 @@ USER_SETTINGS_DIR = os.path.expanduser('~/.wicd/')
 
 
 def setup_dbus():
-    """ Initialize DBus. """
+    """Initialize DBus."""
     global daemon, wireless, wired
     daemon = dbusmanager.get_interface('daemon')
     wireless = dbusmanager.get_interface('wireless')
@@ -50,7 +54,7 @@ def setup_dbus():
 
 
 class PreferencesDialog(object):
-    """ Class for handling the wicd preferences dialog window. """
+    """Class for handling the wicd preferences dialog window."""
     def __init__(self, parent, wTree):
         setup_dbus()
         self.parent = parent
@@ -108,7 +112,7 @@ class PreferencesDialog(object):
         self.load_preferences_diag()
 
     def _setup_external_app_radios(self, radio_list, get_method, set_method):
-        """ Generic function for setting up external app radios. """
+        """Generic function for setting up external app radios."""
         # Disable radios for apps that aren't installed.
         for app in radio_list[1:]:
             app.set_sensitive(daemon.GetAppAvailable(app.get_label()))
@@ -122,7 +126,7 @@ class PreferencesDialog(object):
             radio_list[misc.AUTO].set_active(True)
 
     def load_preferences_diag(self):
-        """ Loads data into the preferences Dialog. """
+        """Loads data into the preferences Dialog."""
 
         self.wiredcheckbox.set_active(daemon.GetAlwaysShowWiredInterface())
         self.reconnectcheckbox.set_active(daemon.GetAutoReconnect())
@@ -208,9 +212,7 @@ class PreferencesDialog(object):
                 ))
 
         # if pynotify isn't installed disable the option
-        try:
-            import pynotify
-        except ImportError:
+        if not pynotify:
             self.notificationscheckbox.set_active(False)
             self.notificationscheckbox.set_sensitive(False)
 
@@ -223,23 +225,23 @@ class PreferencesDialog(object):
         self.wTree.get_object("notebook2").set_current_page(0)
 
     def run(self):
-        """ Runs the preferences dialog window. """
+        """Runs the preferences dialog window."""
         return self.dialog.run()
 
     def hide(self):
-        """ Hides the preferences dialog window. """
+        """Hides the preferences dialog window."""
         self.dialog.hide()
 
     def destroy(self):
-        """ Destroy dialog. """
+        """Destroy dialog."""
         self.dialog.destroy()
 
     def show_all(self):
-        """ Shows the preferences dialog window. """
+        """Shows the preferences dialog window."""
         self.dialog.show()
 
     def save_results(self):
-        """ Pushes the selected settings to the daemon. """
+        """Pushes the selected settings to the daemon."""
         daemon.SetUseGlobalDNS(self.useGlobalDNSCheckbox.get_active())
         # Strip whitespace from DNS entries
         for i in [self.dns1Entry, self.dns2Entry, self.dns3Entry,
@@ -328,13 +330,13 @@ class PreferencesDialog(object):
                                 self.notificationscheckbox.get_active()
 
     def set_label(self, glade_str, label):
-        """ Sets the label for the given widget in wicd.glade. """
+        """Sets the label for the given widget in wicd.glade."""
         self.wTree.get_object(glade_str).set_label(label)
 
     def prep_settings_diag(self):
-        """ Set up anything that doesn't have to be persisted later. """
+        """Set up anything that doesn't have to be persisted later."""
         def build_combobox(lbl):
-            """ Sets up a ComboBox using the given widget name. """
+            """Sets up a ComboBox using the given widget name."""
             liststore = gtk.ListStore(gobject.TYPE_STRING)
             combobox = self.wTree.get_object(lbl)
             combobox.clear()
@@ -345,7 +347,7 @@ class PreferencesDialog(object):
             return combobox
 
         def setup_label(name, lbl=""):
-            """ Sets up a label for the given widget name. """
+            """Sets up a label for the given widget name."""
             widget = self.wTree.get_object(name)
             # if lbl:
             #     widget.set_label(lbl)
@@ -354,12 +356,18 @@ class PreferencesDialog(object):
             return widget
 
         # External Programs tab
-        # self.wTree.get_object("gen_settings_label").set_label(_('General Settings'))
-        # self.wTree.get_object("ext_prog_label").set_label(_('External Programs'))
-        # self.wTree.get_object("dhcp_client_label").set_label(_('DHCP Client'))
-        # self.wTree.get_object("wired_detect_label").set_label(_('Wired Link Detection'))
-        # self.wTree.get_object("route_flush_label").set_label(_('Route Table Flushing'))
-        # self.wTree.get_object("pref_backend_label").set_label(_('Backend') + ":")
+        # self.wTree.get_object("gen_settings_label").set_label(_('General '
+        #                                                         'Settings'))
+        # self.wTree.get_object("ext_prog_label").set_label(_('External '
+        #                                                     'Programs'))
+        # self.wTree.get_object("dhcp_client_label").set_label(_('DHCP '
+        #                                                        'Client'))
+        # self.wTree.get_object("wired_detect_label").set_label(_('Wired Link '
+        #                                                         'Detection'))
+        # self.wTree.get_object("route_flush_label").set_label(_('Route Table '
+        #                                                        'Flushing'))
+        # self.wTree.get_object("pref_backend_label").set_label(_('Backend') +
+        #                                                       ":")
 
         # entryWiredAutoMethod = self.wTree.get_object("pref_wired_auto_label")
         # entryWiredAutoMethod.set_label('Wired Autoconnect Setting:')
@@ -374,7 +382,8 @@ class PreferencesDialog(object):
         # self.set_label("pref_search_dom_label", "%s:" % _('Search domain'))
         # self.set_label("pref_wifi_label", "%s:" % _('Wireless Interface'))
         # self.set_label("pref_wired_label", "%s:" % _('Wired Interface'))
-        # self.set_label("pref_driver_label", "%s:" % _('WPA Supplicant Driver'))
+        # self.set_label("pref_driver_label", "%s:" % _('WPA Supplicant '
+        #                                               'Driver'))
 
         self.dialog = self.wTree.get_object("pref_dialog")
         self.dialog.set_title(_('Preferences'))
@@ -384,46 +393,36 @@ class PreferencesDialog(object):
             width = 450
         self.dialog.resize(width, int(gtk.gdk.screen_height() / 2))
 
-        self.wiredcheckbox = setup_label(
-            "pref_always_check",
-            _('''Always show wired interface''')
-        )
+        self.wiredcheckbox = setup_label("pref_always_check",
+                                         _('''Always show wired interface'''))
         self.preferwiredcheckbox = setup_label("pref_prefer_wired_check",
                                                "prefer_wired")
 
         self.reconnectcheckbox = setup_label("pref_auto_check",
-                                             _('Automatically reconnect on connection loss'))
+                                             _('Automatically reconnect on '
+                                               'connection loss'))
         self.showneverconnectcheckbox = setup_label(
-            "pref_show_never_connect_check",
-            _('Show never connect networks')
-        )
+            "pref_show_never_connect_check", _('Show never connect networks'))
         self.debugmodecheckbox = setup_label("pref_debug_check",
                                              _('Enable debug mode'))
         self.displaytypecheckbox = setup_label(
-            "pref_dbm_check",
-            _('Use dBm to measure signal strength')
-        )
+            "pref_dbm_check", _('Use dBm to measure signal strength'))
         self.verifyapcheckbox = setup_label(
             "pref_verify_ap_check",
-            _('Ping static gateways after connecting to verify association')
-        )
+            _('Ping static gateways after connecting to verify association'))
         self.usedefaultradiobutton = setup_label(
             "pref_use_def_radio",
-            _('Use default profile on wired autoconnect')
-        )
+            _('Use default profile on wired autoconnect'))
         self.showlistradiobutton = setup_label(
             "pref_prompt_radio",
-            _('Prompt for profile on wired autoconnect')
-        )
+            _('Prompt for profile on wired autoconnect'))
         self.lastusedradiobutton = setup_label(
             "pref_use_last_radio",
-            _('Use last used profile on wired autoconnect')
-        )
+            _('Use last used profile on wired autoconnect'))
 
         self.notificationscheckbox = setup_label(
             "pref_use_libnotify",
-            _('Display notifications about connection status')
-        )
+            _('Display notifications about connection status'))
 
         # DHCP Clients
         self.dhcpautoradio = setup_label(
@@ -434,8 +433,8 @@ class PreferencesDialog(object):
         self.udhcpcradio = self.wTree.get_object("udhcpc_radio")
 
         # Wired Link Detection Apps
-        self.linkautoradio = setup_label(
-            "link_auto_radio", _('Automatic (recommended)'))
+        self.linkautoradio = setup_label("link_auto_radio",
+                                         _('Automatic (recommended)'))
         self.linkautoradio = setup_label("link_auto_radio")
         self.ethtoolradio = setup_label("ethtool_radio")
         self.miitoolradio = setup_label("miitool_radio")
@@ -447,8 +446,8 @@ class PreferencesDialog(object):
         self.routeflushradio = setup_label("route_flush_radio")
 
         # Graphical Sudo Apps
-        self.sudoautoradio = setup_label(
-            "sudo_auto_radio", _('Automatic (recommended)'))
+        self.sudoautoradio = setup_label("sudo_auto_radio",
+                                         _('Automatic (recommended)'))
         self.gksudoradio = setup_label("gksudo_radio")
         self.kdesuradio = setup_label("kdesu_radio")
         self.ktsussradio = setup_label("ktsuss_radio")
@@ -487,7 +486,6 @@ class PreferencesDialog(object):
                 self.backendcombo.append_text(x)
 
     def be_combo_changed(self, combo):
-        """ Update the description label for the given backend. """
+        """Update the description label for the given backend."""
         self.backendcombo.set_tooltip_text(
-            self.be_descriptions[self.backends[combo.get_active()]]
-        )
+            self.be_descriptions[self.backends[combo.get_active()]])

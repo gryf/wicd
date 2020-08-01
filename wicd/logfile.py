@@ -1,5 +1,12 @@
-#!/usr/bin/env python3
+"""
+Managing logfile rotation. A ManagedLog object is a file-like object that
+rotates itself when a maximum size is reached.
 
+
+TODO(gryf): how about using standard logging module and let the log rotating
+to system tools like logrotate?
+
+"""
 #
 #    Copyright (C) 1999-2006  Keith Dart <keith@kdart.com>
 #    Copyright (C) 2008-2009  Dan O'Reilly <oreilldf@gmail.com>
@@ -14,28 +21,23 @@
 #    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
 #    Lesser General Public License for more details.
 
-"""
-
-Managing logfile rotation. A ManagedLog object is a file-like object that
-rotates itself when a maximum size is reached.
-
-"""
-
-import sys
-import os
-import time
 import io
+import os
+import sys
+import time
+
 
 class SizeError(IOError):
-    """ Custom error class. """
+    """Custom error class."""
     pass
+
 
 class LogFile(io.FileIO):
     """LogFile(name, [mode="w"], [maxsize=360000])
-    
+
     Opens a new file object. After writing <maxsize> bytes a SizeError
     will be raised.
-    
+
     """
     def __init__(self, name, mode="a", maxsize=360000, *args, **kwargs):
         super(LogFile, self).__init__(name, mode, maxsize, *args, **kwargs)
@@ -48,29 +50,32 @@ class LogFile(io.FileIO):
 
     def write(self, data):
         self.written += len(data)
-        
+
+        # TODO(gryf): revisit need for encode/decode madness
         data = data.encode('utf-8')
         if len(data) <= 0:
             return
+
         if self.eol:
-            super(LogFile, self).write(self.get_time().encode("utf-8") + b' :: ')
+            super(LogFile, self).write(self.get_time().encode("utf-8") +
+                                       b' :: ')
             self.eol = False
 
         if data[-1] == '\n':
             self.eol = True
             data = data[:-1]
 
-        super(LogFile, self).write(data.replace(
-                                    b'\n', b'\n' + self.get_time().encode("utf-8") + b' :: '))
+        super(LogFile, self).write(data.replace(b'\n', b'\n' + self.get_time()
+                                                .encode("utf-8") + b' :: '))
         if self.eol:
             super(LogFile, self).write('\n')
-            
+
         self.flush()
         if self.written > self.maxsize:
             raise SizeError
-        
+
     def get_time(self):
-        """ Return a string with the current time nicely formatted.
+        """Return a string with the current time nicely formatted.
 
         The format of the returned string is yyyy/mm/dd HH:MM:SS
 
@@ -82,21 +87,21 @@ class LogFile(io.FileIO):
             str(x[4]).rjust(2, '0'), ':', str(x[5]).rjust(2, '0')])
 
     def rotate(self):
-        """ Rotate logfile. """
+        """Rotate logfile."""
         return rotate(self)
 
     def note(self, text):
         """Writes a specially formated note text to the file.
-        
+
         The note starts with the string '\\n#*=' so you can easily filter them.
-        
+
         """
         self.write("\n#*===== %s =====\n" % (text,))
 
 
 class ManagedLog(object):
     """ManagedLog(name, [maxsize=360000], [maxsave=9])
-    
+
     A ManagedLog instance is a persistent log object. Write data with the
     write() method. The log size and rotation is handled automatically.
 
@@ -108,29 +113,29 @@ class ManagedLog(object):
         self.maxsave = maxsave
 
     def __repr__(self):
-        return "%s(%r, %r, %r)" % (self.__class__.__name__, self._lf.name, 
+        return "%s(%r, %r, %r)" % (self.__class__.__name__, self._lf.name,
                                    self._lf.maxsize, self.maxsave)
 
     def write(self, data):
-        """ Write logfile. """
+        """Write logfile."""
         try:
             self._lf.write(data)
         except SizeError:
             self._lf = rotate(self._lf, self.maxsave)
 
     def note(self, data):
-        """ Write a note to the logfile. """
+        """Write a note to the logfile."""
         try:
             self._lf.note(data)
         except SizeError:
             self._lf = rotate(self._lf, self.maxsave)
 
     def written(self):
-        """ Return whether the logfile was written. """
+        """Return whether the logfile was written."""
         return self._lf.written
 
     def rotate(self):
-        """ Rotate logfile. """
+        """Rotate logfile."""
         self._lf = rotate(self._lf, self.maxsave)
 
     # auto-delegate remaining methods (but you should not read or seek an open
@@ -141,9 +146,9 @@ class ManagedLog(object):
 
 # useful for logged stdout for daemon processes
 class ManagedStdio(ManagedLog):
-    """ Manage stdout/stderr. """
+    """Manage stdout/stderr."""
     def write(self, data):
-        """ Write logfile to disk. """
+        """Write logfile to disk."""
         try:
             self._lf.write(data)
         except SizeError:
@@ -157,7 +162,7 @@ class ManagedStdio(ManagedLog):
 
 
 def rotate(fileobj, maxsave=9):
-    """ Rotate fileobj. """
+    """Rotate fileobj."""
     name = fileobj.name
     mode = fileobj.mode
     maxsize = fileobj.maxsize
@@ -168,7 +173,7 @@ def rotate(fileobj, maxsave=9):
 
 # assumes basename logfile is closed.
 def shiftlogs(basename, maxsave):
-    """ Shift logfiles. """
+    """Shift logfiles."""
     topname = "%s.%d" % (basename, maxsave)
     if os.path.isfile(topname):
         os.unlink(topname)
@@ -187,11 +192,12 @@ def shiftlogs(basename, maxsave):
 
 
 def open(name, maxsize=360000, maxsave=9):
-    """ Open logfile. """
+    """Open logfile."""
     return ManagedLog(name, maxsize, maxsave)
 
+
 def writelog(logobj, data):
-    """ Write logfile. """
+    """Write logfile."""
     try:
         logobj.write(data)
     except SizeError:

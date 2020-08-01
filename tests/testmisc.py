@@ -4,6 +4,7 @@
 import unittest
 from wicd import misc
 
+
 class TestMisc(unittest.TestCase):
     def test_misc_run(self):
         output = misc.Run(['echo', 'hi']).strip()
@@ -25,10 +26,12 @@ class TestMisc(unittest.TestCase):
         self.assertTrue(misc.IsValidIP('::1'))
 
     def test_valid_ip_6(self):
-        self.assertTrue(misc.IsValidIP('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'))
+        self.assertTrue(misc.
+                        IsValidIP('FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'))
 
     def test_valid_ip_7(self):
-        self.assertTrue(misc.IsValidIP('2001:0db8:85a3:0000:0000:8a2e:0370:7334'))
+        self.assertTrue(misc.
+                        IsValidIP('2001:0db8:85a3:0000:0000:8a2e:0370:7334'))
 
     def test_invalid_ip_1(self):
         self.assertFalse(misc.IsValidIP('-10.0.-1.-1'))
@@ -46,10 +49,12 @@ class TestMisc(unittest.TestCase):
         self.assertFalse(misc.IsValidIP('1:'))
 
     def test_invalid_ip_6(self):
-        self.assertFalse(misc.IsValidIP('ZZZZ:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'))
+        self.assertFalse(misc.
+                         IsValidIP('ZZZZ:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF:FFFF'))
 
     def test_invalid_ip_7(self):
-        self.assertFalse(misc.IsValidIP('2001:0db8:85Z3:0000:0000:8a2e:0370:7334'))
+        self.assertFalse(misc.
+                         IsValidIP('2001:0db8:85Z3:0000:0000:8a2e:0370:7334'))
 
     def test_run_valid_regex(self):
         import re
@@ -72,7 +77,7 @@ class TestMisc(unittest.TestCase):
     def test_to_boolean_true(self):
         self.assertTrue(misc.to_bool('True'))
 
-    def test_to_boolean_true(self):
+    def test_to_boolean_true_int(self):
         self.assertTrue(misc.to_bool('1'))
 
     def test_noneify_1(self):
@@ -137,7 +142,8 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(misc.to_unicode('abcdef'), 'abcdef')
 
     def test_to_unicode_4(self):
-        self.assertEqual(type(misc.to_unicode('abcdef'.encode('latin-1'))), bytes)
+        self.assertEqual(type(misc.to_unicode('abcdef'.encode('latin-1'))),
+                         bytes)
 
     def test_to_unicode_5(self):
         self.assertEqual(misc.to_unicode("berkåk"), "berkåk")
@@ -163,13 +169,15 @@ class TestMisc(unittest.TestCase):
     def test_string_to_none_4(self):
         self.assertEqual(misc.stringToNone('abcdef'), 'abcdef')
 
+
 def suite():
-	suite = unittest.TestSuite()
-	tests = []
-	[ tests.append(test) for test in dir(TestMisc) if test.startswith('test') ]
-	for test in tests:
-		suite.addTest(TestMisc(test))
-	return suite
+    suite = unittest.TestSuite()
+    tests = []
+    [tests.append(test) for test in dir(TestMisc) if test.startswith('test')]
+    for test in tests:
+        suite.addTest(TestMisc(test))
+    return suite
+
 
 if __name__ == '__main__':
-	unittest.main()
+    unittest.main()

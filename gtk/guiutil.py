@@ -1,4 +1,4 @@
-""" guiutil - A collection of commonly used gtk/gui functions and classes. """
+"""guiutil - A collection of commonly used gtk/gui functions and classes."""
 #
 #   Copyright (C) 2007 - 2009 Adam Blackburn
 #   Copyright (C) 2007 - 2009 Dan O'Reilly
@@ -38,7 +38,7 @@ if wpath.no_use_notifications:
 
 
 def can_use_notify():
-    """ Check whether WICD is allowed to use notifications. """
+    """Check whether WICD is allowed to use notifications."""
     use_notify = os.path.exists(os.path.join(os.path.expanduser('~/.wicd'),
                                              'USE_NOTIFICATIONS')
                                 )
@@ -46,9 +46,9 @@ def can_use_notify():
 
 
 def error(parent, message, block=True):
-    """ Shows an error dialog. """
+    """Shows an error dialog."""
     def delete_event(dialog, i):
-        """ Handle dialog destroy. """
+        """Handle dialog destroy."""
         dialog.destroy()
 
     if can_use_notify() and not block:
@@ -67,9 +67,9 @@ def error(parent, message, block=True):
 
 
 def alert(parent, message, block=True):
-    """ Shows an warning dialog. """
+    """Shows an warning dialog."""
     def delete_event(dialog, i):
-        """ Handle dialog destroy. """
+        """Handle dialog destroy."""
         dialog.destroy()
 
     dialog = gtk.MessageDialog(parent, gtk.DIALOG_MODAL, gtk.MESSAGE_WARNING,
@@ -84,12 +84,12 @@ def alert(parent, message, block=True):
 
 
 def string_input(prompt, secondary, textbox_label):
-    """ Dialog with a label and an entry. """
+    """Dialog with a label and an entry."""
     # based on a version of a PyGTK text entry from
     # http://ardoris.wordpress.com/2008/07/05/pygtk-text-entry-dialog/
 
     def dialog_response(entry, dialog, response):
-        """ Handle dialog response. """
+        """Handle dialog response."""
         dialog.response(response)
 
     dialog = gtk.MessageDialog(
@@ -128,21 +128,21 @@ def string_input(prompt, secondary, textbox_label):
 
 
 class SmallLabel(gtk.Label):
-    """ Small GtkLabel. """
+    """Small GtkLabel."""
     def __init__(self, text=''):
         gtk.Label.__init__(self, text)
         self.set_size_request(50, -1)
 
 
 class LeftAlignedLabel(gtk.Label):
-    """GtkLabel with text aligned to left. """
+    """GtkLabel with text aligned to left."""
     def __init__(self, label=None):
         gtk.Label.__init__(self, label)
         self.set_alignment(0.0, 0.5)
 
 
 class LabelEntry(gtk.HBox):
-    """ A label on the left with a textbox on the right. """
+    """A label on the left with a textbox on the right."""
     def __init__(self, text):
         gtk.HBox.__init__(self)
         self.entry = gtk.Entry()
@@ -160,37 +160,37 @@ class LabelEntry(gtk.HBox):
         self.show()
 
     def set_text(self, text):
-        """ Set text of the GtkEntry. """
+        """Set text of the GtkEntry."""
         # For compatibility...
         self.entry.set_text(text)
 
     def get_text(self):
-        """ Get text of the GtkEntry. """
+        """Get text of the GtkEntry."""
         return self.entry.get_text()
 
     def set_auto_hidden(self, value):
-        """ Set auto-hide of the text of GtkEntry. """
+        """Set auto-hide of the text of GtkEntry."""
         self.entry.set_visibility(False)
         self.auto_hide_text = value
 
     def show_characters(self, widget=None, event=None):
-        """ When the box has focus, show the characters. """
+        """When the box has focus, show the characters."""
         if self.auto_hide_text and widget:
             self.entry.set_visibility(True)
 
     def set_sensitive(self, value):
-        """ Set sensitivity of the widget. """
+        """Set sensitivity of the widget."""
         self.entry.set_sensitive(value)
         self.label.set_sensitive(value)
 
     def hide_characters(self, widget=None, event=None):
-        """ When the box looses focus, hide them. """
+        """When the box looses focus, hide them."""
         if self.auto_hide_text and widget:
             self.entry.set_visibility(False)
 
 
 class GreyLabel(gtk.Label):
-    """ Creates a grey gtk.Label. """
+    """Creates a grey gtk.Label."""
     def __init__(self):
         gtk.Label.__init__(self)
 
@@ -200,7 +200,7 @@ class GreyLabel(gtk.Label):
 
 
 class ProtectedLabelEntry(gtk.HBox):
-    """ A LabelEntry with a CheckButton that protects the entry text. """
+    """A LabelEntry with a CheckButton that protects the entry text."""
     def __init__(self, label_text):
         gtk.HBox.__init__(self)
         self.entry = gtk.Entry()
@@ -223,28 +223,28 @@ class ProtectedLabelEntry(gtk.HBox):
         self.show()
 
     def set_entry_text(self, text):
-        """ Set text of the GtkEntry. """
+        """Set text of the GtkEntry."""
         # For compatibility...
         self.entry.set_text(text)
 
     def get_entry_text(self):
-        """ Get text of the GtkEntry. """
+        """Get text of the GtkEntry."""
         return self.entry.get_text()
 
     def set_sensitive(self, value):
-        """ Set sensitivity of the widget. """
+        """Set sensitivity of the widget."""
         self.entry.set_sensitive(value)
         self.label.set_sensitive(value)
         self.check.set_sensitive(value)
 
     def click_handler(self, widget=None, event=None):
-        """ Handle clicks. """
+        """Handle clicks."""
         active = self.check.get_active()
         self.entry.set_visibility(active)
 
 
 class LabelCombo(gtk.HBox):
-    """ A label on the left with a combobox on the right. """
+    """A label on the left with a combobox on the right."""
 
     def __init__(self, text):
         gtk.HBox.__init__(self)
@@ -263,26 +263,26 @@ class LabelCombo(gtk.HBox):
         self.show()
 
     def get_active(self):
-        """ Return the selected item in the GtkComboBox. """
+        """Return the selected item in the GtkComboBox."""
         return self.combo.get_active()
 
     def set_active(self, index):
-        """ Set given item in the GtkComboBox. """
+        """Set given item in the GtkComboBox."""
         self.combo.set_active(index)
 
     def get_active_text(self):
-        """ Return the selected item's text in the GtkComboBox. """
+        """Return the selected item's text in the GtkComboBox."""
         return self.combo.get_active_text()
 
     def get_model(self):
-        """ Return the GtkComboBox's model. """
+        """Return the GtkComboBox's model."""
         return self.combo.get_model()
 
     def set_model(self, model=None):
-        """ Set the GtkComboBox's model. """
+        """Set the GtkComboBox's model."""
         self.combo.set_model(model)
 
     def set_sensitive(self, value):
-        """ Set sensitivity of the widget. """
+        """Set sensitivity of the widget."""
         self.combo.set_sensitive(value)
         self.label.set_sensitive(value)

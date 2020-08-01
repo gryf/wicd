@@ -1,4 +1,4 @@
-""" netentry -- Network entry widgets for the GUI.
+"""netentry -- Network entry widgets for the GUI.
 
 This module provides GUI widgets used to represent wired and wireless
 entries in the GUI's network list, as well as any settings dialogs
@@ -23,9 +23,9 @@ contained within them.
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import os
 
 import gtk
-import os
 
 import wicd.misc as misc
 import wicd.wpath as wpath
@@ -43,7 +43,7 @@ wireless = None
 
 
 def setup_dbus():
-    """ Initialize DBus. """
+    """Initialize DBus."""
     global daemon, wireless, wired
     daemon = dbusmanager.get_interface('daemon')
     wireless = dbusmanager.get_interface('wireless')
@@ -51,9 +51,9 @@ def setup_dbus():
 
 
 class AdvancedSettingsDialog(gtk.Dialog):
-    """ Advanced settings dialog. """
+    """Advanced settings dialog."""
     def __init__(self, network_name=None):
-        """ Build the base advanced settings dialog.
+        """Build the base advanced settings dialog.
 
         This class isn't used by itself, instead it is used as a parent for
         the WiredSettingsDialog and WirelessSettingsDialog.
@@ -109,7 +109,7 @@ class AdvancedSettingsDialog(gtk.Dialog):
         script_image = gtk.Image()
         script_image.set_from_stock(gtk.STOCK_EXECUTE, 4)
         script_image.set_padding(4, 0)
-        #self.script_button.set_alignment(.5, .5)
+        # self.script_button.set_alignment(.5, .5)
         self.script_button.set_image(script_image)
         self.script_button.set_label(_('Scripts'))
 
@@ -158,7 +158,7 @@ class AdvancedSettingsDialog(gtk.Dialog):
         self.chkbox_static_dns.set_active(False)
 
     def set_default_size(self):
-        """ Set default window size. """
+        """Set default window size."""
         width, height = self.get_size()
         s_height = gtk.gdk.screen_height()
         if s_height < 768:
@@ -168,7 +168,7 @@ class AdvancedSettingsDialog(gtk.Dialog):
         self.resize(int(width), int(height))
 
     def set_defaults(self, widget=None, event=None):
-        """ Put some default values into entries to help the user out. """
+        """Put some default values into entries to help the user out."""
         self.txt_ip.set_text(self.txt_ip.get_text().strip())
         ip = self.txt_ip.get_text()  # For easy typing :)
         netmask = self.txt_netmask
@@ -195,7 +195,7 @@ class AdvancedSettingsDialog(gtk.Dialog):
             error(None, _('Invalid IP address entered.'))
 
     def reset_static_checkboxes(self):
-        """ Enable the right stuff. """
+        """Enable the right stuff."""
         if stringToNone(self.txt_ip.get_text()):
             self.chkbox_static_ip.set_active(True)
             self.chkbox_static_dns.set_active(True)
@@ -216,7 +216,7 @@ class AdvancedSettingsDialog(gtk.Dialog):
         self.toggle_global_dns_checkbox()
 
     def toggle_ip_checkbox(self, widget=None):
-        """Toggle entries/checkboxes based on the static IP checkbox. """
+        """Toggle entries/checkboxes based on the static IP checkbox."""
         # Should disable the static IP text boxes, and also enable the DNS
         # checkbox when disabled and disable when enabled.
         if self.chkbox_static_ip.get_active():
@@ -230,33 +230,33 @@ class AdvancedSettingsDialog(gtk.Dialog):
         self.txt_gateway.set_sensitive(self.chkbox_static_ip.get_active())
 
     def toggle_dns_checkbox(self, widget=None):
-        """ Toggle entries and checkboxes based on the static dns checkbox. """
+        """Toggle entries and checkboxes based on the static dns checkbox."""
         # Should disable the static DNS boxes
         if self.chkbox_static_ip.get_active():
             self.chkbox_static_dns.set_active(True)
             self.chkbox_static_dns.set_sensitive(False)
 
         self.chkbox_global_dns.set_sensitive(self.chkbox_static_dns.
-                                                            get_active())
+                                             get_active())
 
-        l = [self.txt_dns_1, self.txt_dns_2, self.txt_dns_3, self.txt_domain,
-             self.txt_search_dom]
+        search_list = [self.txt_dns_1, self.txt_dns_2, self.txt_dns_3,
+                       self.txt_domain, self.txt_search_dom]
         if self.chkbox_static_dns.get_active():
             # If global dns is on, don't use local dns
-            for w in l:
+            for w in search_list:
                 w.set_sensitive(not self.chkbox_global_dns.get_active())
         else:
-            for w in l:
+            for w in search_list:
                 w.set_sensitive(False)
             self.chkbox_global_dns.set_active(False)
 
     def toggle_dhcp_hostname_checkbox(self, widget=None):
-        """ Set widget sensitivity. """
+        """Set widget sensitivity."""
         self.txt_dhcp_hostname.set_sensitive(
             self.chkbox_use_dhcp_hostname.get_active())
 
     def toggle_global_dns_checkbox(self, widget=None):
-        """ Set the DNS entries' sensitivity based on the Global checkbox. """
+        """Set the DNS entries' sensitivity based on the Global checkbox."""
         global_dns_active = daemon.GetUseGlobalDNS()
         if not global_dns_active and self.chkbox_global_dns.get_active():
             error(
@@ -270,19 +270,21 @@ class AdvancedSettingsDialog(gtk.Dialog):
                 w.set_sensitive(not self.chkbox_global_dns.get_active())
 
     def toggle_encryption(self, widget=None):
-        """ Toggle the encryption combobox based on the encryption checkbox. """
+        """
+        Toggle the encryption combobox based on the encryption checkbox.
+        """
         active = self.chkbox_encryption.get_active()
         self.vbox_encrypt_info.set_sensitive(active)
         self.combo_encryption.set_sensitive(active)
 
     def destroy_called(self, *args):
-        """ Clean up everything. """
+        """Clean up everything."""
         super(AdvancedSettingsDialog, self).destroy()
         self.destroy()
         del self
 
     def save_settings(self, networkid=None):
-        """ Save settings common to wired and wireless settings dialogs. """
+        """Save settings common to wired and wireless settings dialogs."""
         if self.chkbox_static_ip.get_active():
             self.set_net_prop("ip", noneToString(self.txt_ip.get_text()))
             self.set_net_prop(
@@ -305,8 +307,8 @@ class AdvancedSettingsDialog(gtk.Dialog):
             self.set_net_prop("dns1", noneToString(self.txt_dns_1.get_text()))
             self.set_net_prop("dns2", noneToString(self.txt_dns_2.get_text()))
             self.set_net_prop("dns3", noneToString(self.txt_dns_3.get_text()))
-        elif self.chkbox_static_dns.get_active() and \
-             self.chkbox_global_dns.get_active():
+        elif (self.chkbox_static_dns.get_active() and
+              self.chkbox_global_dns.get_active()):
             self.set_net_prop('use_static_dns', True)
             self.set_net_prop('use_global_dns', True)
         else:
@@ -319,11 +321,11 @@ class AdvancedSettingsDialog(gtk.Dialog):
             self.set_net_prop("dns3", '')
         self.set_net_prop('usedhcphostname',
                           self.chkbox_use_dhcp_hostname.get_active())
-        self.set_net_prop(
-            "dhcphostname",noneToString(self.txt_dhcp_hostname.get_text()))
+        self.set_net_prop("dhcphostname", noneToString(self.txt_dhcp_hostname.
+                                                       get_text()))
 
     def change_encrypt_method(self, widget=None):
-        """ Load all the entries for a given encryption method. """
+        """Load all the entries for a given encryption method."""
         for z in self.vbox_encrypt_info:
             z.destroy()  # Remove stuff in there already
         ID = self.combo_encryption.get_active()
@@ -358,23 +360,26 @@ class AdvancedSettingsDialog(gtk.Dialog):
                     box.entry.set_text(noneToBlankString(
                         wired.GetWiredProperty(field[0])))
                 else:
-                    box.entry.set_text(noneToBlankString(
-                        wireless.GetWirelessProperty(self.networkID, field[0])))
+                    box.entry.set_text(
+                        noneToBlankString(wireless.
+                                          GetWirelessProperty(self.networkID,
+                                                              field[0])))
         self.vbox_encrypt_info.show_all()
 
 
 class WiredSettingsDialog(AdvancedSettingsDialog):
-    """ Wired settings dialog. """
+    """Wired settings dialog."""
     def __init__(self, name):
-        """ Build the wired settings dialog. """
+        """Build the wired settings dialog."""
         AdvancedSettingsDialog.__init__(self, _('Wired Network'))
 
         # So we can test if we are wired or wireless (for
         # change_encrypt_method())
         self.wired = True
 
-        ## This section is largely copied from WirelessSettingsDialog, but with
-        ## some changes
+        # This section is largely copied from WirelessSettingsDialog, but with
+        # some changes
+        #
         # Set up encryption stuff
         self.combo_encryption = gtk.combo_box_new_text()
         self.chkbox_encryption = gtk.CheckButton(_('Use Encryption'))
@@ -405,11 +410,11 @@ class WiredSettingsDialog(AdvancedSettingsDialog):
         self.prof_name = name
 
     def set_net_prop(self, option, value):
-        """ Sets the given option to the given value for this network. """
+        """Sets the given option to the given value for this network."""
         wired.SetWiredProperty(option, value)
 
     def edit_scripts(self, widget=None, event=None):
-        """ Launch the script editting dialog. """
+        """Launch the script editting dialog."""
         profile = self.prof_name
         cmdend = [os.path.join(wpath.gtk, "configscript.py"), profile, "wired"]
         if os.getuid() != 0:
@@ -418,12 +423,11 @@ class WiredSettingsDialog(AdvancedSettingsDialog):
                 prog_num=daemon.GetSudoApp()
             )
             if not cmdbase:
-                error(None,
-                    _('Could not find a graphical sudo program. '
-                    'The script editor could not be launched.  '
-                    "You'll have to edit scripts directly your configuration "
-                    "file.")
-                )
+                error(None, _("Could not find a graphical sudo program. "
+                              "The script editor could not be launched.  "
+                              "You'll have to edit scripts directly your "
+                              "configuration "
+                              "file."))
                 return
             cmdbase.extend(cmdend)
             misc.LaunchAndWait(cmdbase)
@@ -431,7 +435,7 @@ class WiredSettingsDialog(AdvancedSettingsDialog):
             misc.LaunchAndWait(cmdend)
 
     def set_values(self):
-        """ Fill in the Gtk.Entry objects with the correct values. """
+        """Fill in the Gtk.Entry objects with the correct values."""
         self.txt_ip.set_text(self.format_entry("ip"))
         self.txt_netmask.set_text(self.format_entry("netmask"))
         self.txt_gateway.set_text(self.format_entry("gateway"))
@@ -457,7 +461,7 @@ class WiredSettingsDialog(AdvancedSettingsDialog):
         self.toggle_encryption()
 
     def save_settings(self, networkid=None):
-        """ Save settings to disk. """
+        """Save settings to disk."""
         # Check encryption info
         encrypt_info = self.encryption_info
         self.set_net_prop(
@@ -495,11 +499,11 @@ class WiredSettingsDialog(AdvancedSettingsDialog):
         return True
 
     def format_entry(self, label):
-        """ Helper method to fetch and format wired properties. """
+        """Helper method to fetch and format wired properties."""
         return noneToBlankString(wired.GetWiredProperty(label))
 
     def destroy_called(self, *args):
-        """ Clean up everything. """
+        """Clean up everything."""
         self.disconnect(self.des)
         super(WiredSettingsDialog, self).destroy_called()
         self.destroy()
@@ -507,9 +511,9 @@ class WiredSettingsDialog(AdvancedSettingsDialog):
 
 
 class WirelessSettingsDialog(AdvancedSettingsDialog):
-    """ Wireless settings dialog. """
+    """Wireless settings dialog."""
     def __init__(self, networkID):
-        """ Build the wireless settings dialog. """
+        """Build the wireless settings dialog."""
         AdvancedSettingsDialog.__init__(
             self, wireless.GetWirelessProperty(networkID, 'essid'))
         # So we can test if we are wired or wireless (for
@@ -555,8 +559,8 @@ class WirelessSettingsDialog(AdvancedSettingsDialog):
         activeID = -1  # Set the menu to this item when we are done
         for x, enc_type in enumerate(self.encrypt_types):
             self.combo_encryption.append_text(enc_type['name'])
-            if enc_type['type'] == \
-              wireless.GetWirelessProperty(networkID, "enctype"):
+            if enc_type['type'] == wireless.GetWirelessProperty(networkID,
+                                                                "enctype"):
                 activeID = x
         self.combo_encryption.set_active(activeID)
         if activeID != -1:
@@ -580,29 +584,26 @@ class WirelessSettingsDialog(AdvancedSettingsDialog):
         self.des = self.connect("destroy", self.destroy_called)
 
     def destroy_called(self, *args):
-        """ Clean up everything. """
+        """Clean up everything."""
         self.disconnect(self.des)
         super(WirelessSettingsDialog, self).destroy_called()
         self.destroy()
         del self
 
     def edit_scripts(self, widget=None, event=None):
-        """ Launch the script editting dialog. """
+        """Launch the script editting dialog."""
         cmdend = [os.path.join(wpath.gtk, "configscript.py"),
-                                str(self.networkID), "wireless"]
+                  str(self.networkID), "wireless"]
         if os.getuid() != 0:
             cmdbase = misc.get_sudo_cmd(
                 _('You must enter your password to configure scripts'),
                 prog_num=daemon.GetSudoApp()
             )
             if not cmdbase:
-                error(
-                    None,
-                    _('Could not find a graphical sudo program. '
-                    'The script editor could not be launched.  '
-                    "You'll have to edit scripts directly your "
-                    "configuration file.")
-                )
+                error(None, _("Could not find a graphical sudo program. The "
+                              "script editor could not be launched.  You'll "
+                              "have to edit scripts directly your "
+                              "configuration file."))
                 return
             cmdbase.extend(cmdend)
             misc.LaunchAndWait(cmdbase)
@@ -610,11 +611,11 @@ class WirelessSettingsDialog(AdvancedSettingsDialog):
             misc.LaunchAndWait(cmdend)
 
     def set_net_prop(self, option, value):
-        """ Sets the given option to the given value for this network. """
+        """Sets the given option to the given value for this network."""
         wireless.SetWirelessProperty(self.networkID, option, value)
 
     def set_values(self):
-        """ Set the various network settings to the right values. """
+        """Set the various network settings to the right values."""
         networkID = self.networkID
         self.txt_ip.set_text(self.format_entry(networkID, "ip"))
         self.txt_netmask.set_text(self.format_entry(networkID, "netmask"))
@@ -636,14 +637,11 @@ class WirelessSettingsDialog(AdvancedSettingsDialog):
         self.chkbox_encryption.set_active(
             bool(wireless.GetWirelessProperty(networkID, 'encryption')))
         self.chkbox_global_settings.set_active(
-            bool(
-                wireless.GetWirelessProperty(networkID, 'use_settings_globally')
-            )
-        )
+            bool(wireless.GetWirelessProperty(networkID,
+                                              'use_settings_globally')))
 
         self.chkbox_use_dhcp_hostname.set_active(
             bool(wireless.GetWirelessProperty(networkID, 'usedhcphostname')))
-
 
         dhcphname = wireless.GetWirelessProperty(networkID, "dhcphostname")
         if dhcphname is None:
@@ -704,8 +702,8 @@ class WirelessSettingsDialog(AdvancedSettingsDialog):
             for entry_key, entry_info in list(encrypt_info.items()):
                 self.set_net_prop(entry_key,
                                   noneToString(entry_info[0].entry.get_text()))
-        elif not self.chkbox_encryption.get_active() and \
-             wireless.GetWirelessProperty(networkid, "encryption"):
+        elif (not self.chkbox_encryption.get_active() and
+              wireless.GetWirelessProperty(networkid, "encryption")):
             # Encrypt checkbox is off, but the network needs it.
             error(self, _('This network requires encryption to be enabled.'))
             return False
@@ -735,14 +733,15 @@ class WirelessSettingsDialog(AdvancedSettingsDialog):
         return True
 
     def format_entry(self, networkid, label):
-        """ Helper method for fetching/formatting wireless properties. """
-        return noneToBlankString(wireless.GetWirelessProperty(networkid, label))
+        """Helper method for fetching/formatting wireless properties."""
+        return noneToBlankString(wireless.GetWirelessProperty(networkid,
+                                                              label))
 
 
 class NetworkEntry(gtk.HBox):
-    """ Network entry. """
+    """Network entry."""
     def __init__(self):
-        """ Base network entry class.
+        """Base network entry class.
 
         Provides gtk objects used by both the WiredNetworkEntry and
         WirelessNetworkEntry classes.
@@ -793,16 +792,16 @@ class NetworkEntry(gtk.HBox):
         self.expander_vbox.pack_start(self.buttons_hbox)
 
     def destroy_called(self, *args):
-        """ Clean up everything. """
+        """Clean up everything."""
         super(NetworkEntry, self).destroy()
         self.destroy()
         del self
 
 
 class WiredNetworkEntry(NetworkEntry):
-    """ Wired network entry. """
+    """Wired network entry."""
     def __init__(self):
-        """ Load the wired network entry. """
+        """Load the wired network entry."""
         NetworkEntry.__init__(self)
         # Center the picture and pad it a bit
         self.image.set_padding(0, 0)
@@ -819,13 +818,15 @@ class WiredNetworkEntry(NetworkEntry):
 
         self.button_add = gtk.Button(stock=gtk.STOCK_ADD)
         self.button_delete = gtk.Button(stock=gtk.STOCK_DELETE)
-        self.profile_help = gtk.Label(
-            _('To connect to a wired network, you must create a network '
-            'profile. To create a network profile, type a name that describes '
-            'this network, and press Add.')
-        )
-        self.chkbox_default_profile = gtk.CheckButton(
-            _('Use as default profile (overwrites any previous default)'))
+        self.profile_help = gtk.Label(_('To connect to a wired network, you '
+                                        'must create a network profile. To '
+                                        'create a network profile, type a '
+                                        'name that describes this network, '
+                                        'and press Add.'))
+        self.chkbox_default_profile = gtk.CheckButton(_('Use as default '
+                                                        'profile (overwrites '
+                                                        'any previous '
+                                                        'default)'))
         self.combo_profile_names = gtk.combo_box_new_text()
 
         # Format the profile help label.
@@ -881,7 +882,7 @@ class WiredNetworkEntry(NetworkEntry):
         self.wireddis = self.connect("destroy", self.destroy_called)
 
     def destroy_called(self, *args):
-        """ Clean up everything. """
+        """Clean up everything."""
         self.disconnect(self.wireddis)
         self.advanced_dialog.destroy_called()
         del self.advanced_dialog
@@ -890,11 +891,11 @@ class WiredNetworkEntry(NetworkEntry):
         del self
 
     def save_wired_settings(self):
-        """ Save wired network settings. """
+        """Save wired network settings."""
         return self.advanced_dialog.save_settings()
 
     def check_enable(self):
-        """ Disable objects if the profile list is empty. """
+        """Disable objects if the profile list is empty."""
         profile_list = wired.GetWiredProfileList()
         if not profile_list:
             self.button_delete.set_sensitive(False)
@@ -902,7 +903,7 @@ class WiredNetworkEntry(NetworkEntry):
             self.advanced_button.set_sensitive(False)
 
     def update_connect_button(self, state, apbssid=None):
-        """ Update the connection/disconnect button for this entry. """
+        """Update the connection/disconnect button for this entry."""
         if state == misc.WIRED:
             self.disconnect_button.show()
             self.connect_button.hide()
@@ -911,7 +912,7 @@ class WiredNetworkEntry(NetworkEntry):
             self.connect_button.show()
 
     def add_profile(self, widget):
-        """ Add a profile to the profile list. """
+        """Add a profile to the profile list."""
         response = string_input(
             "Enter a profile name", "The profile name will not be used by the "
             "computer. It allows you to easily distinguish between different "
@@ -941,12 +942,12 @@ class WiredNetworkEntry(NetworkEntry):
             self.advanced_button.set_sensitive(True)
 
     def remove_profile(self, widget):
-        """ Remove a profile from the profile list. """
+        """Remove a profile from the profile list."""
         print("removing profile")
         profile_name = self.combo_profile_names.get_active_text()
         wired.DeleteWiredNetworkProfile(profile_name)
         self.combo_profile_names.remove_text(self.combo_profile_names.
-                                                                 get_active())
+                                             get_active())
         self.combo_profile_names.set_active(0)
         self.advanced_dialog.prof_name = \
             self.combo_profile_names.get_active_text()
@@ -962,7 +963,7 @@ class WiredNetworkEntry(NetworkEntry):
             self.profile_help.hide()
 
     def toggle_default_profile(self, widget):
-        """ Change the default profile. """
+        """Change the default profile."""
         if self.chkbox_default_profile.get_active():
             # Make sure there is only one default profile at a time
             wired.UnsetWiredDefault()
@@ -972,7 +973,7 @@ class WiredNetworkEntry(NetworkEntry):
             self.combo_profile_names.get_active_text())
 
     def change_profile(self, widget):
-        """ Called when a new profile is chosen from the list. """
+        """Called when a new profile is chosen from the list."""
         # Make sure the name doesn't change everytime someone types something
         if self.combo_profile_names.get_active() > -1:
             if not self.is_full_gui:
@@ -989,14 +990,14 @@ class WiredNetworkEntry(NetworkEntry):
             self.chkbox_default_profile.set_active(to_bool(is_default))
 
     def format_entry(self, label):
-        """ Help method for fetching/formatting wired properties. """
+        """Help method for fetching/formatting wired properties."""
         return noneToBlankString(wired.GetWiredProperty(label))
 
 
 class WirelessNetworkEntry(NetworkEntry):
-    """ Wireless network entry. """
+    """Wireless network entry."""
     def __init__(self, networkID):
-        """ Build the wireless network entry. """
+        """Build the wireless network entry."""
         NetworkEntry.__init__(self)
 
         self.networkID = networkID
@@ -1061,7 +1062,7 @@ class WirelessNetworkEntry(NetworkEntry):
         self.wifides = self.connect("destroy", self.destroy_called)
 
     def _escape(self, val):
-        """ Escapes special characters so they're displayed correctly. """
+        """Escapes special characters so they're displayed correctly."""
         return val.replace("&", "&amp;"). \
             replace("<", "&lt;"). \
             replace(">", "&gt;"). \
@@ -1069,11 +1070,11 @@ class WirelessNetworkEntry(NetworkEntry):
             replace('"', "&quot;")
 
     def save_wireless_settings(self, networkid):
-        """ Save wireless network settings. """
+        """Save wireless network settings."""
         return self.advanced_dialog.save_settings(networkid)
 
     def update_autoconnect(self, widget=None):
-        """ Called when the autoconnect checkbox is toggled. """
+        """Called when the autoconnect checkbox is toggled."""
         wireless.SetWirelessProperty(
             self.networkID,
             "automatic",
@@ -1082,7 +1083,7 @@ class WirelessNetworkEntry(NetworkEntry):
         wireless.SaveWirelessNetworkProperty(self.networkID, "automatic")
 
     def update_neverconnect(self, widget=None):
-        """ Called when the neverconnect checkbox is toggled. """
+        """Called when the neverconnect checkbox is toggled."""
         wireless.SetWirelessProperty(
             self.networkID,
             "never",
@@ -1097,7 +1098,7 @@ class WirelessNetworkEntry(NetworkEntry):
             self.connect_button.set_sensitive(True)
 
     def destroy_called(self, *args):
-        """ Clean up everything. """
+        """Clean up everything."""
         self.disconnect(self.wifides)
         self.advanced_dialog.destroy_called()
         del self.advanced_dialog
@@ -1106,7 +1107,7 @@ class WirelessNetworkEntry(NetworkEntry):
         del self
 
     def update_connect_button(self, state, apbssid):
-        """ Update the connection/disconnect button for this entry. """
+        """Update the connection/disconnect button for this entry."""
         if to_bool(self.format_entry(self.networkID, "never")):
             self.connect_button.set_sensitive(False)
         if not apbssid:
@@ -1120,7 +1121,7 @@ class WirelessNetworkEntry(NetworkEntry):
             self.connect_button.show()
 
     def set_signal_strength(self, strength, dbm_strength):
-        """ Set the signal strength displayed in the WirelessNetworkEntry. """
+        """Set the signal strength displayed in the WirelessNetworkEntry."""
         if strength:
             strength = int(strength)
         else:
@@ -1162,7 +1163,7 @@ class WirelessNetworkEntry(NetworkEntry):
         self.image.show()
 
     def set_encryption(self, on, ttype):
-        """ Set the encryption value for the WirelessNetworkEntry. """
+        """Set the encryption value for the WirelessNetworkEntry."""
         if on and ttype:
             self.lbl_encryption.set_label(str(ttype))
         if on and not ttype:
@@ -1171,16 +1172,17 @@ class WirelessNetworkEntry(NetworkEntry):
             self.lbl_encryption.set_label(_('Unsecured'))
 
     def set_channel(self, channel):
-        """ Set the channel value for the WirelessNetworkEntry. """
+        """Set the channel value for the WirelessNetworkEntry."""
         self.lbl_channel.set_label(_('Channel') + ' ' + str(channel))
 
     def format_entry(self, networkid, label):
-        """ Helper method for fetching/formatting wireless properties. """
-        return noneToBlankString(wireless.GetWirelessProperty(networkid, label))
+        """Helper method for fetching/formatting wireless properties."""
+        return noneToBlankString(wireless.GetWirelessProperty(networkid,
+                                                              label))
 
 
 class WirelessInformationDialog(gtk.Dialog):
-    """ Wireless information dialog. """
+    """Wireless information dialog."""
     def __init__(self, networkID, parent):
         gtk.Dialog.__init__(self, parent=parent)
 
@@ -1243,7 +1245,7 @@ class WirelessInformationDialog(gtk.Dialog):
         self.destroy()
 
     def set_signal_strength(self, strength, dbm_strength):
-        """ Set the signal strength displayed in the WirelessNetworkEntry. """
+        """Set the signal strength displayed in the WirelessNetworkEntry."""
         if strength is not None:
             strength = int(strength)
         else:
@@ -1283,11 +1285,11 @@ class WirelessInformationDialog(gtk.Dialog):
         self.lbl_strength.set_label(disp_strength + ending)
 
     def set_mac_address(self, address):
-        """ Set the MAC address for the WirelessNetworkEntry. """
+        """Set the MAC address for the WirelessNetworkEntry."""
         self.lbl_mac.set_label(str(address))
 
     def set_encryption(self, on, ttype):
-        """ Set the encryption value for the WirelessNetworkEntry. """
+        """Set the encryption value for the WirelessNetworkEntry."""
         if on and ttype:
             self.lbl_encryption.set_label(str(ttype))
         if on and not ttype:
@@ -1296,13 +1298,14 @@ class WirelessInformationDialog(gtk.Dialog):
             self.lbl_encryption.set_label(_('Unsecured'))
 
     def set_channel(self, channel):
-        """ Set the channel value for the WirelessNetworkEntry. """
+        """Set the channel value for the WirelessNetworkEntry."""
         self.lbl_channel.set_label(_('Channel') + ' ' + str(channel))
 
     def set_mode(self, mode):
-        """ Set the mode value for the WirelessNetworkEntry. """
+        """Set the mode value for the WirelessNetworkEntry."""
         self.lbl_mode.set_label(str(mode))
 
     def format_entry(self, networkid, label):
-        """ Helper method for fetching/formatting wireless properties. """
-        return noneToBlankString(wireless.GetWirelessProperty(networkid, label))
+        """Helper method for fetching/formatting wireless properties."""
+        return noneToBlankString(wireless.GetWirelessProperty(networkid,
+                                                              label))

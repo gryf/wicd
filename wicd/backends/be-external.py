@@ -29,9 +29,15 @@ class WirelessInterface() -- Control a wireless network interface.
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from wicd.wnettools import GetDefaultGateway, GetWiredInterfaces, \
-GetWirelessInterfaces, IsValidWpaSuppDriver, BaseWirelessInterface, \
-BaseWiredInterface, BaseInterface, GetWpaSupplicantDrivers
+from wicd.wnettools import BaseInterface
+from wicd.wnettools import BaseWiredInterface
+from wicd.wnettools import BaseWirelessInterface
+from wicd.wnettools import GetDefaultGateway
+from wicd.wnettools import GetWiredInterfaces
+from wicd.wnettools import GetWirelessInterfaces
+from wicd.wnettools import GetWpaSupplicantDrivers
+from wicd.wnettools import IsValidWpaSuppDriver
+
 
 NAME = "external"
 UPDATE_INTERVAL = 5
@@ -46,14 +52,14 @@ more stable for some set ups.
 
 
 def NeedsExternalCalls(*args, **kargs):
-    """ Return True, since this backend uses iwconfig/ifconfig. """
+    """Return True, since this backend uses iwconfig/ifconfig."""
     return True
 
 
 class Interface(BaseInterface):
-    """ Control a network interface. """
+    """Control a network interface."""
     def __init__(self, iface, verbose=False):
-        """ Initialize the object.
+        """Initialize the object.
 
         Keyword arguments:
         iface -- the name of the interface
@@ -62,12 +68,12 @@ class Interface(BaseInterface):
         """
         BaseInterface.__init__(self, iface, verbose)
         self.Check()
-    
+
 
 class WiredInterface(Interface, BaseWiredInterface):
-    """ Control a wired network interface. """
+    """Control a wired network interface."""
     def __init__(self, iface, verbose=False):
-        """ Initialise the wired network interface class.
+        """Initialise the wired network interface class.
 
         Keyword arguments:
         iface -- name of the interface
@@ -79,9 +85,9 @@ class WiredInterface(Interface, BaseWiredInterface):
 
 
 class WirelessInterface(Interface, BaseWirelessInterface):
-    """ Control a wireless network interface. """
+    """Control a wireless network interface."""
     def __init__(self, iface, verbose=False, wpa_driver='wext'):
-        """ Initialise the wireless network interface class.
+        """Initialise the wireless network interface class.
 
         Keyword arguments:
         iface -- name of the interface

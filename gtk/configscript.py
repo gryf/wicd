@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-
-""" configscript -- Configure the scripts for a particular network.
+"""configscript -- Configure the scripts for a particular network.
 
 Script for configuring the scripts for a network passed in as a
 command line argument.  This needs to run a separate process because
@@ -8,7 +7,6 @@ editing scripts requires root access, and the GUI/Tray are typically
 run as the current user.
 
 """
-
 #
 #   Copyright (C) 2007-2009 Adam Blackburn
 #   Copyright (C) 2007-2009 Dan O'Reilly
@@ -46,7 +44,7 @@ wired_conf = wpath.etc + 'wired-settings.conf'
 
 
 def none_to_blank(text):
-    """ Converts special string cases to a blank string.
+    """Converts special string cases to a blank string.
 
     If text is None, 'None', or '' then this method will
     return '', otherwise it will just return str(text).
@@ -57,47 +55,48 @@ def none_to_blank(text):
     else:
         return str(text)
 
+
 def blank_to_none(text):
-    """ Convert an empty or null string to 'None'. """
+    """Convert an empty or null string to 'None'."""
     if text in ("", None):
         return "None"
     else:
         return str(text)
 
+
 def get_script_info(network, network_type):
-    """ Read script info from disk and load it into the configuration dialog """
+    """
+    Read script info from disk and load it into the configuration dialog
+    """
     info = {}
     if network_type == "wired":
         con = ConfigManager(wired_conf)
-        if con.has_section(network):
-            info["pre_entry"] = con.get(network, "beforescript", None)
-            info["post_entry"] = con.get(network, "afterscript", None)
-            info["pre_disconnect_entry"] = con.get(network,
-                "predisconnectscript", None)
-            info["post_disconnect_entry"] = con.get(network,
-                "postdisconnectscript", None)
+        section = network
     else:
         bssid = wireless.GetWirelessProperty(int(network), "bssid")
         con = ConfigManager(wireless_conf)
-        if con.has_section(bssid):
-            info["pre_entry"] = con.get(bssid, "beforescript", None)
-            info["post_entry"] = con.get(bssid, "afterscript", None)
-            info["pre_disconnect_entry"] = con.get(bssid,
-                "predisconnectscript", None)
-            info["post_disconnect_entry"] = con.get(bssid,
-                "postdisconnectscript", None)
+        section = bssid
+
+    if con.has_section(section):
+        info["pre_entry"] = con.get(section, "beforescript", None)
+        info["post_entry"] = con.get(section, "afterscript", None)
+        info["pre_disconnect_entry"] = con.get(section,
+                                               "predisconnectscript", None)
+        info["post_disconnect_entry"] = con.get(section,
+                                                "postdisconnectscript", None)
     return info
 
+
 def write_scripts(network, network_type, script_info):
-    """ Writes script info to disk and loads it into the daemon. """
+    """Writes script info to disk and loads it into the daemon."""
     if network_type == "wired":
         con = ConfigManager(wired_conf)
         con.set(network, "beforescript", script_info["pre_entry"])
         con.set(network, "afterscript", script_info["post_entry"])
         con.set(network, "predisconnectscript",
-            script_info["pre_disconnect_entry"])
+                script_info["pre_disconnect_entry"])
         con.set(network, "postdisconnectscript",
-            script_info["post_disconnect_entry"])
+                script_info["post_disconnect_entry"])
         con.write()
         wired.ReloadConfig()
         wired.ReadWiredNetworkProfile(network)
@@ -108,17 +107,17 @@ def write_scripts(network, network_type, script_info):
         con.set(bssid, "beforescript", script_info["pre_entry"])
         con.set(bssid, "afterscript", script_info["post_entry"])
         con.set(bssid, "predisconnectscript",
-            script_info["pre_disconnect_entry"])
+                script_info["pre_disconnect_entry"])
         con.set(bssid, "postdisconnectscript",
-            script_info["post_disconnect_entry"])
+                script_info["post_disconnect_entry"])
         con.write()
         wireless.ReloadConfig()
         wireless.ReadWirelessNetworkProfile(int(network))
         wireless.SaveWirelessNetworkProfile(int(network))
 
 
-def main (argv):
-    """ Runs the script configuration dialog. """
+def main(argv):
+    """Runs the script configuration dialog."""
     if len(argv) < 2:
         print('Network id to configure is missing, aborting.')
         sys.exit(1)

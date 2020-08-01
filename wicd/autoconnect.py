@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" autoconnect -- Triggers an automatic connection attempt. """
+"""autoconnect -- Triggers an automatic connection attempt."""
 
 #
 #   Copyright (C) 2007 - 2009 Adam Blackburn
@@ -18,18 +18,17 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-from wicd import dbusmanager
+import sys
+import time
 
 import dbus
-import time
-import sys
-
 if getattr(dbus, 'version', (0, 0, 0)) < (0, 80, 0):
     import dbus.glib
 else:
     from dbus.mainloop.glib import DBusGMainLoop
     DBusGMainLoop(set_as_default=True)
+
+from wicd import dbusmanager
 
 try:
     dbusmanager.connect_to_dbus()
@@ -40,20 +39,24 @@ except Exception as e:
     print('Could not connect to daemon.', file=sys.stderr)
     sys.exit(1)
 
+
 def handler(*args):
-    """ No-op handler. """
+    """No-op handler."""
     pass
+
+
 def error_handler(*args):
-    """ Error handler. """
+    """Error handler."""
     print('Async error autoconnecting.', file=sys.stderr)
     sys.exit(3)
+
 
 if __name__ == '__main__':
     try:
         time.sleep(2)
         daemon.SetSuspend(False)
         if not daemon.CheckIfConnecting():
-            daemon.AutoConnect(True, reply_handler=handler, 
+            daemon.AutoConnect(True, reply_handler=handler,
                                error_handler=error_handler)
     except Exception as e:
         print("Exception caught: %s" % str(e), file=sys.stderr)

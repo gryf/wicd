@@ -32,7 +32,7 @@ wired = None
 
 
 class PrefsDialog(urwid.WidgetWrap):
-    """ Preferences dialog. """
+    """Preferences dialog."""
     # pylint: disable-msg=W0231
     def __init__(self, body, pos, ui, dbus=None):
         global daemon, wireless, wired
@@ -48,14 +48,15 @@ class PrefsDialog(urwid.WidgetWrap):
 
         width, height = ui.get_cols_rows()
         height -= 3
-        #width = 80
-        #height = 20
+        # width = 80
+        # height = 20
         # Stuff that goes at the top
 
         header0_t = _('General Settings')
         header1_t = _('External Programs')
         header2_t = _('Advanced Settings')
-        self.header0 = urwid.AttrWrap(SelText(header0_t), 'tab active', 'focus')
+        self.header0 = urwid.AttrWrap(SelText(header0_t), 'tab active',
+                                      'focus')
         self.header1 = urwid.AttrWrap(SelText(header1_t), 'body', 'focus')
         self.header2 = urwid.AttrWrap(SelText(header2_t), 'body', 'focus')
         title = ('Preferences')
@@ -63,9 +64,7 @@ class PrefsDialog(urwid.WidgetWrap):
         # Blank line
         _blank = urwid.Text('')
 
-        ####
-        #### Text in the widgets
-        ####
+        # Text in the widgets
 
         # General Settings
         net_cat_t = ('header', ('Network Interfaces'))
@@ -90,7 +89,7 @@ class PrefsDialog(urwid.WidgetWrap):
         auto_reconn_cat_t = ('header', _('Automatic Reconnection'))
         auto_reconn_t = _('Automatically reconnect on connection loss')
 
-        #### External Programs
+        # External Programs
         automatic_t = _('Automatic (recommended)')
 
         dhcp_header_t = ('header', _('DHCP Client'))
@@ -108,12 +107,12 @@ class PrefsDialog(urwid.WidgetWrap):
         flush1_t = 'ip'
         flush2_t = 'route'
 
-        #### Advanced Settings
+        # Advanced Settings
         wpa_cat_t = ('header', _('WPA Supplicant'))
         wpa_t = ('editcp', 'Driver:')
         wpa_list = []
-        wpa_warn_t = ('important',
-            _('You should almost always use wext as the WPA supplicant driver'))
+        wpa_warn_t = ('important', _('You should almost always use wext as '
+                                     'the WPA supplicant driver'))
 
         backend_cat_t = ('header', _('Backend'))
         backend_t = _('Backend') + ':'
@@ -124,12 +123,10 @@ class PrefsDialog(urwid.WidgetWrap):
 
         wless_cat_t = ('header', _('Wireless Interface'))
         use_dbm_t = _('Use dBm to measure signal strength')
-        verify_ap_t = \
-            _('Ping static gateways after connecting to verify association')
+        verify_ap_t = _('Ping static gateways after connecting to verify '
+                        'association')
 
-        ####
-        #### UI Widgets
-        ####
+        # UI Widgets
 
         # General Settings
         self.net_cat = urwid.Text(net_cat_t)
@@ -142,10 +139,9 @@ class PrefsDialog(urwid.WidgetWrap):
         # Default the global DNS settings to off.  They will be reenabled later
         # if so required.
         global_dns_state = False
-        self.global_dns_checkb = urwid.CheckBox(global_dns_t,
-             global_dns_state,
-            on_state_change=self.global_dns_trigger
-        )
+        self.global_dns_checkb = urwid.CheckBox(global_dns_t, global_dns_state,
+                                                on_state_change=self.
+                                                global_dns_trigger)
         self.search_dom = DynWrap(urwid.Edit(search_dom_t), global_dns_state)
         self.dns_dom = DynWrap(urwid.Edit(dns_dom_t), global_dns_state)
         self.dns1 = DynWrap(urwid.Edit(dns1_t), global_dns_state)
@@ -156,9 +152,12 @@ class PrefsDialog(urwid.WidgetWrap):
 
         self.wired_auto_l = []
         self.wired_auto_cat = urwid.Text(wired_auto_cat_t)
-        self.wired_auto_1 = urwid.RadioButton(self.wired_auto_l, wired_auto_1_t)
-        self.wired_auto_2 = urwid.RadioButton(self.wired_auto_l, wired_auto_2_t)
-        self.wired_auto_3 = urwid.RadioButton(self.wired_auto_l, wired_auto_3_t)
+        self.wired_auto_1 = urwid.RadioButton(self.wired_auto_l,
+                                              wired_auto_1_t)
+        self.wired_auto_2 = urwid.RadioButton(self.wired_auto_l,
+                                              wired_auto_2_t)
+        self.wired_auto_3 = urwid.RadioButton(self.wired_auto_l,
+                                              wired_auto_2_t)
 
         self.auto_reconn_cat = urwid.Text(auto_reconn_cat_t)
         self.auto_reconn_checkb = urwid.CheckBox(auto_reconn_t)
@@ -180,7 +179,8 @@ class PrefsDialog(urwid.WidgetWrap):
             self.auto_reconn_checkb
         ])
 
-        #### External Programs tab
+        # External Programs tab
+
         automatic_t = _('Automatic (recommended)')
 
         self.dhcp_header = urwid.Text(dhcp_header_t)
@@ -223,7 +223,8 @@ class PrefsDialog(urwid.WidgetWrap):
             self.flush0, self.flush1, self.flush2
         ])
 
-        #### Advanced settings
+        # Advanced settings
+
         self.wpa_cat = urwid.Text(wpa_cat_t)
         self.wpa_cbox = ComboBox(wpa_t)
         self.wpa_warn = urwid.Text(wpa_warn_t)
@@ -257,15 +258,16 @@ class PrefsDialog(urwid.WidgetWrap):
             self.header1: externalLB,
             self.header2: advancedLB
         }
-        #self.load_settings()
+
+        # self.load_settings()
 
         self.tabs = TabColumns(headerList, lbList, _('Preferences'))
         # pylint: disable-msg=E1101
         self.__super.__init__(self.tabs)
 
     def load_settings(self):
-        """ Load settings to be used in the dialog. """
-        ### General Settings
+        """Load settings to be used in the dialog."""
+        # General Settings
         # ComboBox does not like dbus.Strings as text markups.  My fault. :/
         wless_iface = str(daemon.GetWirelessInterface())
         wired_iface = str(daemon.GetWiredInterface())
@@ -280,7 +282,8 @@ class PrefsDialog(urwid.WidgetWrap):
         theDNS = daemon.GetGlobalDNSAddresses()
 
         i = 0
-        for w in self.dns1, self.dns2, self.dns3, self.dns_dom, self.search_dom:
+        for w in (self.dns1, self.dns2, self.dns3, self.dns_dom,
+                  self.search_dom):
             w.set_edit_text(misc.noneToBlankString(theDNS[i]))
             i += 1
 
@@ -289,11 +292,11 @@ class PrefsDialog(urwid.WidgetWrap):
         self.auto_reconn_checkb.set_state(daemon.GetAutoReconnect())
 
         def find_avail(apps):
-            """ Find available apps. """
+            """Find available apps."""
             for app in apps[1:]:
                 app.set_sensitive(daemon.GetAppAvailable(app.get_label()))
 
-        ### External Programs
+        # External Programs
         find_avail(self.dhcp_l)
         dhcp_method = daemon.GetDHCPClient()
         self.dhcp_l[dhcp_method].set_state(True)
@@ -306,7 +309,7 @@ class PrefsDialog(urwid.WidgetWrap):
         flush_method = daemon.GetFlushTool()
         self.flush_l[flush_method].set_state(True)
 
-        ### Advanced settings
+        # Advanced settings
         # wpa_supplicant janx
         self.wpadrivers = wireless.GetWpaSupplicantDrivers()
         self.wpadrivers.append("ralink_legacy")
@@ -337,7 +340,7 @@ class PrefsDialog(urwid.WidgetWrap):
         self.verify_ap_checkb.set_state(daemon.GetShouldVerifyAp())
 
     def save_settings(self):
-        """ Pushes the selected settings to the daemon.
+        """Pushes the selected settings to the daemon.
             This exact order is found in prefs.py"""
         daemon.SetUseGlobalDNS(self.global_dns_checkb.get_state())
 
@@ -404,11 +407,12 @@ class PrefsDialog(urwid.WidgetWrap):
         daemon.SetFlushTool(flush_tool)
 
     def global_dns_trigger(self, check_box, new_state, user_data=None):
-        """ DNS CheckBox callback. """
-        for w in self.dns1, self.dns2, self.dns3, self.dns_dom, self.search_dom:
+        """DNS CheckBox callback."""
+        for w in (self.dns1, self.dns2, self.dns3, self.dns_dom,
+                  self.search_dom):
             w.set_sensitive(new_state)
 
     def ready_widgets(self, ui, body):
-        """ Build comboboxes. """
+        """Build comboboxes."""
         self.wpa_cbox.build_combobox(body, ui, 4)
         self.backend_cbox.build_combobox(body, ui, 8)

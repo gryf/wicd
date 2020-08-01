@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" Network interface control tools for wicd.
+"""Network interface control tools for wicd.
 
 This module implements functions to control and obtain information from
 network interfaces.
@@ -31,29 +31,30 @@ class BaseWirelessInterface() -- Control a wireless network interface.
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
-import re
-import random
-import time
 import dbus
-import socket, fcntl
+import fcntl
+import functools
+import os
+import random
+import re
 import shutil
-from functools import cmp_to_key
+import socket
+import time
 
-from . import wpath
-from . import misc
-from .misc import find_path 
+from wicd import wpath
+from wicd import misc
+from wicd.misc import find_path
 
 # Regular expressions.
 _re_mode = (re.I | re.M | re.S)
 essid_pattern = re.compile('.*ESSID:"?(.*?)".*\n', _re_mode)
 ap_mac_pattern = re.compile('.*Address: (.*?)\n', _re_mode)
-channel_pattern = re.compile('.*Channel:?=? ?(\d+)', _re_mode)
-strength_pattern = re.compile('.*Quality:?=? ?(\d+)\s*/?\s*(\d*)', _re_mode)
-altstrength_pattern = re.compile('.*Signal level:?=? ?(\d+)\s*/?\s*(\d*)',
-    _re_mode)
-signaldbm_pattern = re.compile('.*Signal level:?=? ?(-\d\d*)', _re_mode)
-bitrates_pattern = re.compile('([\d\.]+)\s+\S+/s', _re_mode)
+channel_pattern = re.compile(r'.*Channel:?=? ?(\d+)', _re_mode)
+strength_pattern = re.compile(r'.*Quality:?=? ?(\d+)\s*/?\s*(\d*)', _re_mode)
+altstrength_pattern = re.compile(r'.*Signal level:?=? ?(\d+)\s*/?\s*(\d*)',
+                                 _re_mode)
+signaldbm_pattern = re.compile(r'.*Signal level:?=? ?(-\d\d*)', _re_mode)
+bitrates_pattern = re.compile(r'([\d\.]+)\s+\S+/s', _re_mode)
 mode_pattern = re.compile('.*Mode:([A-Za-z-]*?)\n', _re_mode)
 freq_pattern = re.compile('.*Frequency:(.*?)\n', _re_mode)
 wep_pattern = re.compile('.*Encryption key:(.*?)\n', _re_mode)
@@ -61,17 +62,17 @@ altwpa_pattern = re.compile('(wpa_ie)', _re_mode)
 wpa1_pattern = re.compile('(WPA Version 1)', _re_mode)
 wpa2_pattern = re.compile('(WPA2)', _re_mode)
 
-#iwconfig-only regular expressions.
+# iwconfig-only regular expressions.
 ip_up = re.compile(r'flags=[0.9]*<([^>]*)>', re.S)
 ip_pattern = re.compile(r'inet [Aa]d?dr[^.]*:([^.]*\.[^.]*\.[^.]*\.[0-9]*)',
-    re.S)
+                        re.S)
 ip_pattern1 = re.compile(r'inet ([^.]*\.[^.]*\.[^.]*\.[0-9]*)', re.S)
-bssid_pattern = re.compile('.*[(Access Point)|(Cell)]: ' + \
-    '(([0-9A-Z]{2}:){5}[0-9A-Z]{2})', _re_mode)
+bssid_pattern = re.compile('.*[(Access Point)|(Cell)]: '
+                           '(([0-9A-Z]{2}:){5}[0-9A-Z]{2})', _re_mode)
 bitrate_pattern = re.compile('.*Bit Rate[=:](.*?/s)', _re_mode)
 opmode_pattern = re.compile('.*Mode:(.*?) ', _re_mode)
-authmethods_pattern = re.compile('.*Authentication capabilities ' + \
-    ':\n(.*?)Current', _re_mode)
+authmethods_pattern = re.compile('.*Authentication capabilities '
+                                 ':\n(.*?)Current', _re_mode)
 
 # Regular expressions for wpa_cli output
 auth_pattern = re.compile('.*wpa_state=(.*?)\n', _re_mode)
@@ -85,47 +86,52 @@ blacklist_norm = list(";`$!*|><&\\")
 blacklist_strict_t = str.maketrans(dict.fromkeys(blacklist_strict, None))
 blacklist_norm_t = str.maketrans(dict.fromkeys(blacklist_norm, None))
 
+_cache = {}
+
+
 def _sanitize_string(string):
-    """ Sanitize string. """
+    """Sanitize string."""
     if string:
         return str(string).translate(blacklist_norm_t)
     else:
         return string
 
+
 def _sanitize_string_strict(string):
-    """ Sanitize string in a stricter way. """
+    """Sanitize string in a stricter way."""
     if string:
         return str(string).translate(blacklist_strict_t)
     else:
         return string
-  
-_cache = {}
+
+
 def timedcache(duration=5):
-    """ A caching decorator for use with wnettools methods.
-    
+    """A caching decorator for use with wnettools methods.
+
     Caches the results of a function for a given number of
     seconds (defaults to 5).
-    
+
     """
     def _timedcache(f):
         def __timedcache(self, *args, **kwargs):
             key = str(args) + str(kwargs) + str(f)
             if hasattr(self, 'iface'):
                 key += self.iface
-            if (key in _cache and 
-                (time.time() - _cache[key]['time']) < duration):
+            if (key in _cache and
+                    (time.time() - _cache[key]['time']) < duration):
                 return _cache[key]['value']
             else:
                 value = f(self, *args, **kwargs)
-                _cache[key] = { 'time' : time.time(), 'value' : value }
+                _cache[key] = {'time': time.time(), 'value': value}
                 return value
-            
+
         return __timedcache
-    
+
     return _timedcache
 
+
 def GetDefaultGateway():
-    """ Attempts to determine the default gateway by parsing route -n. """
+    """Attempts to determine the default gateway by parsing route -n."""
     route_info = misc.Run("route -n")
     lines = route_info.split('\n')
     gateway = None
@@ -137,20 +143,21 @@ def GetDefaultGateway():
         if words[0] == '0.0.0.0':
             gateway = words[1]
             break
-        
+
     if not gateway:
         print('couldn\'t retrieve default gateway from route -n')
     return gateway
 
+
 def isWireless(devname):
     """
-    Classic-style wifi device classification using linux/wireless.h 
+    Classic-style wifi device classification using linux/wireless.h
     This should be extended or replaced by nl80211.h style classification
     in the future, if wireless.h is fully replaced.
     """
     we = None
     for t in [socket.AF_INET, socket.AF_INET6, socket.AF_IPX, socket.AF_AX25,
-      socket.AF_APPLETALK]:
+              socket.AF_APPLETALK]:
         try:
             sk = socket.socket(t, socket.SOCK_DGRAM)
         except socket.error:
@@ -159,7 +166,7 @@ def isWireless(devname):
             continue
         skfd = sk.fileno()
         try:
-            #define SIOCGIWNAME 0x8b01 in linux/wireless.h
+            # define SIOCGIWNAME 0x8b01 in linux/wireless.h
             # "used to verify the presence of wireless extensions"
             we = fcntl.ioctl(skfd, 0x8b01, devname)
         except IOError:
@@ -167,8 +174,9 @@ def isWireless(devname):
         sk.close()
     return we is not None
 
+
 def GetWirelessInterfaces():
-    """ Get available wireless interfaces.
+    """Get available wireless interfaces.
 
     Attempts to get an interface first by parsing /proc/net/wireless,
     and should that fail, by parsing iwconfig.
@@ -177,48 +185,55 @@ def GetWirelessInterfaces():
 
     """
     dev_dir = '/sys/class/net/'
-    ifnames = [iface for iface in os.listdir(dev_dir) if isWireless(str(iface))]
+    ifnames = [iface for iface in os.listdir(dev_dir)
+               if isWireless(str(iface))]
     return ifnames
 
+
 def GetWiredInterfaces():
-    """ Returns a list of wired interfaces on the system. """
+    """Returns a list of wired interfaces on the system."""
     basedir = '/sys/class/net/'
     return [iface for iface in os.listdir(basedir)
-            if os.path.isdir(basedir + iface) and not 'wireless'
-            in os.listdir(basedir + iface) and
+            if os.path.isdir(basedir + iface) and
+            'wireless' not in os.listdir(basedir + iface) and
             open(basedir + iface + "/type").readlines()[0].strip() == "1"]
 
+
 def NeedsExternalCalls():
-    """ Returns True if the backend needs to use an external program. """
+    """Returns True if the backend needs to use an external program."""
     raise NotImplementedError
 
+
 def GetWpaSupplicantDrivers():
-    """ Returns a list of all valid wpa_supplicant drivers. """
+    """Returns a list of all valid wpa_supplicant drivers."""
     output = misc.Run(["wpa_supplicant", "-h"])
     try:
         output = output.split("drivers:")[1].split("options:")[0].strip()
     except KeyError:
         print("Warning: Couldn't get list of valid wpa_supplicant drivers")
         return [""]
-    patt = re.compile("(\S+)\s+=.*")
+    patt = re.compile(r"(\S+)\s+=.*")
     drivers = patt.findall(output) or [""]
     # We cannot use the "wired" driver for wireless interfaces.
     if 'wired' in drivers:
         drivers.remove('wired')
     return drivers
+
+
 def IsValidWpaSuppDriver(driver):
-    """ Returns True if given string is a valid wpa_supplicant driver. """
+    """Returns True if given string is a valid wpa_supplicant driver."""
     output = misc.Run(["wpa_supplicant", "-D%s" % driver, "-iolan19",
                        "-c/etc/abcd%sdefzz.zconfz" % random.randint(1, 1000)])
-    return not "Unsupported driver" in output
-    
+    return "Unsupported driver" not in output
+
+
 def neediface(default_response):
-    """ A decorator for only running a method if self.iface is defined.
-    
+    """A decorator for only running a method if self.iface is defined.
+
     This decorator is wrapped around Interface methods, and will
     return a provided default_response value if self.iface is not
     defined.
-    
+
     """
     def wrapper(func):
         def newfunc(self, *args, **kwargs):
@@ -234,9 +249,9 @@ def neediface(default_response):
 
 
 class BaseInterface(object):
-    """ Control a network interface. """
+    """Control a network interface."""
     def __init__(self, iface, verbose=False):
-        """ Initialise the object.
+        """Initialise the object.
 
         Keyword arguments:
         iface -- the name of the interface
@@ -247,7 +262,7 @@ class BaseInterface(object):
         self.verbose = verbose
         self.DHCP_CLIENT = None
         self.flush_tool = None
-        self.link_detect = None       
+        self.link_detect = None
         self.dhcp_object = None
 
         self.ethtool_cmd = None
@@ -268,50 +283,49 @@ class BaseInterface(object):
         self.ktsuss_cmd = None
 
     def SetDebugMode(self, value):
-        """ If True, verbose output is enabled. """
+        """If True, verbose output is enabled."""
         self.verbose = value
 
     def SetInterface(self, iface):
-        """ Sets the interface.
-        
+        """Sets the interface.
+
         Keyword arguments:
         iface -- the name of the interface.
-        
+
         """
         self.iface = _sanitize_string_strict(str(iface))
-        
+
     def _find_program_path(self, program):
-        """ Determines the full path for the given program.
-        
+        """Determines the full path for the given program.
+
         Searches for a given program name on the PATH.
-        
+
         Keyword arguments:
         program -- The name of the program to search for
-        
+
         Returns:
         The full path of the program or None
-        
+
         """
         path = find_path(program)
         if not path and self.verbose:
             print("WARNING: No path found for %s" % program)
         return path
 
-    
     def _get_dhcp_command(self, flavor=None, hostname=None, staticdns=False):
-        """ Returns the correct DHCP client command. 
-       
+        """Returns the correct DHCP client command.
+
         Given a type of DHCP request (create or release a lease),
         this method will build a command to complete the request
         using the correct dhcp client, and cli options.
-        
+
         """
         def get_client_name(cl):
-            """ Converts the integer value for a dhcp client to a string. """
+            """Converts the integer value for a dhcp client to a string."""
             if self.dhcpcd_cmd and cl in [misc.DHCPCD, misc.AUTO]:
                 client = "dhcpcd"
                 cmd = self.dhcpcd_cmd
-            elif self.pump_cmd and cl in [misc.PUMP, misc.AUTO]: 
+            elif self.pump_cmd and cl in [misc.PUMP, misc.AUTO]:
                 client = "pump"
                 cmd = self.pump_cmd
             elif self.dhclient_cmd and cl in [misc.DHCLIENT, misc.AUTO]:
@@ -327,37 +341,35 @@ class BaseInterface(object):
                 cmd = ""
             return (client, cmd)
 
-                # probably /var/lib/wicd/dhclient.conf with defaults
-        dhclient_conf_path = os.path.join(
-                    wpath.varlib,
-                    'dhclient.conf'
-                )
-        
+        # probably /var/lib/wicd/dhclient.conf with defaults
+        dhclient_conf_path = os.path.join(wpath.varlib, 'dhclient.conf')
+
         client_dict = {
-            "dhclient" : 
-                {'connect' : r"%(cmd)s -cf %(dhclientconf)s %(extra)s %(iface)s",
-                 'connect_with_hostname' : r"%(cmd)s -cf %(dhclientconf)s %(extra)s %(iface)s",
-                 'release' : r"%(cmd)s -r %(iface)s",
-                 'id' : misc.DHCLIENT, 
-                 },
-            "pump" : 
-                { 'connect' : r"%(cmd)s -i %(iface)s %(extra)s",
-                  'connect_with_hostname' : r"%(cmd)s -i %(iface)s -h %(hostname)s %(extra)s",
-                  'release' : r"%(cmd)s -r -i %(iface)s",
-                  'id' : misc.PUMP,
-                },
-            "dhcpcd" : 
-                {'connect' : r"%(cmd)s --noipv4ll %(extra)s %(iface)s",
-                 'connect_with_hostname' : r"%(cmd)s -h %(hostname)s --noipv4ll %(extra)s %(iface)s ",
-                 'release' : r"%(cmd)s -k %(iface)s",
-                 'id' : misc.DHCPCD,
-                },
+            "dhclient":
+                {'connect': r"%(cmd)s -cf %(dhclientconf)s "
+                            r"%(extra)s %(iface)s",
+                 'connect_with_hostname': r"%(cmd)s -cf %(dhclientconf)s "
+                                          r"%(extra)s %(iface)s",
+                 'release': r"%(cmd)s -r %(iface)s",
+                 'id': misc.DHCLIENT},
+            "pump":
+                {'connect': r"%(cmd)s -i %(iface)s %(extra)s",
+                 'connect_with_hostname': r"%(cmd)s -i %(iface)s -h "
+                                          r"%(hostname)s %(extra)s",
+                 'release': r"%(cmd)s -r -i %(iface)s",
+                 'id': misc.PUMP},
+            "dhcpcd":
+                {'connect': r"%(cmd)s --noipv4ll %(extra)s %(iface)s",
+                 'connect_with_hostname': r"%(cmd)s -h %(hostname)s "
+                                          r"--noipv4ll %(extra)s %(iface)s ",
+                 'release': r"%(cmd)s -k %(iface)s",
+                 'id': misc.DHCPCD},
             "udhcpc":
-                {'connect' : r"%(cmd)s -n -i %(iface)s %(extra)s",
-                 'connect_with_hostname' : r"%(cmd)s -n -i %(iface)s -H %(hostname)s %(extra)s",
-                 'release' : r"killall -SIGUSR2 %(cmd)s",
-                 'id' : misc.UDHCPC,
-                },
+                {'connect': r"%(cmd)s -n -i %(iface)s %(extra)s",
+                 'connect_with_hostname': r"%(cmd)s -n -i %(iface)s -H "
+                                          r"%(hostname)s %(extra)s",
+                 'release': r"killall -SIGUSR2 %(cmd)s",
+                 'id': misc.UDHCPC},
         }
         (client_name, cmd) = get_client_name(self.DHCP_CLIENT)
 
@@ -366,29 +378,32 @@ class BaseInterface(object):
         if client_name == "dhclient" and flavor:
             if hostname:
                 print('attempting to set hostname with dhclient')
-                print('using dhcpcd or another supported client may work better')
+                print('using dhcpcd or another supported client may work '
+                      'better')
 
-                dhclient_template = \
-                    open(os.path.join(wpath.etc, 'dhclient.conf.template'), 'r')
+                dhclient_template = open(os.path.
+                                         join(wpath.etc,
+                                              'dhclient.conf.template'), 'r')
                 output_conf = open(dhclient_conf_path, 'w')
 
                 for line in dhclient_template.readlines():
-                    line = line.replace('# <WICDHOSTNAME>', 'send host-name "%s";' \
-                        % hostname)
+                    line = line.replace('# <WICDHOSTNAME>', 'send host-name '
+                                        '"%s";' % hostname)
                     output_conf.write(line)
 
                 output_conf.close()
                 dhclient_template.close()
             else:
-                shutil.copy(os.path.join(wpath.etc, 'dhclient.conf.template'), \
-                    dhclient_conf_path)
+                shutil.copy(os.path.join(wpath.etc,
+                                         'dhclient.conf.template'),
+                            dhclient_conf_path)
 
             os.chmod(dhclient_conf_path, 0o644)
 
         if not client_name or not cmd:
             print("WARNING: Failed to find a valid dhcp client!")
             return ""
-            
+
         if flavor == "connect":
 
             # set up (optional) extra arguments to the dhcp client,
@@ -398,36 +413,36 @@ class BaseInterface(object):
                 extra_args = "--nohook resolv.conf"
 
             if hostname:
-                return client_dict[client_name]['connect_with_hostname'] % \
-                    { "cmd" : cmd,
-                      "iface" : self.iface,
-                      "hostname" : hostname,
-                      'extra': extra_args,
-                      'dhclientconf' : dhclient_conf_path }
+                return (client_dict[client_name]['connect_with_hostname'] %
+                        {"cmd": cmd,
+                         "iface": self.iface,
+                         "hostname": hostname,
+                         'extra': extra_args,
+                         'dhclientconf': dhclient_conf_path})
             else:
-                return client_dict[client_name]['connect'] % \
-                    { "cmd" : cmd,
-                      "iface" : self.iface,
-                      'extra': extra_args,
-                      'dhclientconf' : dhclient_conf_path }
+                return (client_dict[client_name]['connect'] %
+                        {"cmd": cmd,
+                         "iface": self.iface,
+                         'extra': extra_args,
+                         'dhclientconf': dhclient_conf_path})
         elif flavor == "release":
-            return client_dict[client_name]['release'] % \
-                {"cmd": cmd, "iface": self.iface}
+            return client_dict[client_name]['release'] % {"cmd": cmd,
+                                                          "iface": self.iface}
         else:
             return client_dict[client_name]['id']
-    
+
     def AppAvailable(self, app):
-        """ Return whether a given app is available.
-        
+        """Return whether a given app is available.
+
         Given the name of an executable, determines if it is
         available for use by checking for a defined 'app'_cmd
         instance variable.
-        
+
         """
         return bool(self.__dict__.get("%s_cmd" % app.replace("-", "")))
-        
+
     def Check(self):
-        """ Check that all required tools are available. """
+        """Check that all required tools are available."""
         # THINGS TO CHECK FOR: ethtool, pptp-linux, dhclient, host
         self.CheckDHCP()
         self.CheckWiredTools()
@@ -437,22 +452,22 @@ class BaseInterface(object):
         self.CheckResolvConf()
 
     def CheckResolvConf(self):
-        """ Checks for the existence of resolvconf."""
+        """Checks for the existence of resolvconf."""
         self.resolvconf_cmd = self._find_program_path("resolvconf")
-        
+
     def CheckDHCP(self):
-        """ Check for the existence of valid DHCP clients. 
-        
+        """Check for the existence of valid DHCP clients.
+
         Checks for the existence of a supported DHCP client.  If one is
         found, the appropriate values for DHCP_CMD, DHCP_RELEASE, and
         DHCP_CLIENT are set.  If a supported client is not found, a
         warning is printed.
-        
+
         """
         self.dhclient_cmd = self._find_program_path("dhclient")
-        if self.dhclient_cmd != None:
+        if self.dhclient_cmd is not None:
             output = misc.Run(self.dhclient_cmd + " --version",
-                    include_stderr=True)
+                              include_stderr=True)
             if '4.' in output:
                 self.dhclient_needs_verbose = True
             else:
@@ -460,36 +475,36 @@ class BaseInterface(object):
         self.dhcpcd_cmd = self._find_program_path("dhcpcd")
         self.pump_cmd = self._find_program_path("pump")
         self.udhcpc_cmd = self._find_program_path("udhcpc")
-        
+
     def CheckWiredTools(self):
-        """ Check for the existence of ethtool and mii-tool. """
+        """Check for the existence of ethtool and mii-tool."""
         self.miitool_cmd = self._find_program_path("mii-tool")
         self.ethtool_cmd = self._find_program_path("ethtool")
-            
+
     def CheckWirelessTools(self):
-        """ Check for the existence of wpa_cli """
+        """Check for the existence of wpa_cli"""
         self.wpa_cli_cmd = self._find_program_path("wpa_cli")
         if not self.wpa_cli_cmd:
             print("wpa_cli not found.  Authentication will not be validated.")
-     
+
     def CheckRouteFlushTool(self):
-        """ Check for a route flush tool. """
+        """Check for a route flush tool."""
         self.ip_cmd = self._find_program_path("ip")
         self.route_cmd = self._find_program_path("route")
-            
+
     def CheckSudoApplications(self):
-        """ Check for available root-gaining 'sudo' applications. """
+        """Check for available root-gaining 'sudo' applications."""
         self.gksudo_cmd = self._find_program_path("gksudo")
         self.kdesu_cmd = self._find_program_path("kdesu")
         self.ktsuss_cmd = self._find_program_path("ktsuss")
 
     @neediface(False)
     def Up(self):
-        """ Bring the network interface up.
-        
+        """Bring the network interface up.
+
         Returns:
         True
-        
+
         """
         cmd = 'ifconfig ' + self.iface + ' up'
         if self.verbose:
@@ -499,22 +514,22 @@ class BaseInterface(object):
 
     @neediface(False)
     def Down(self):
-        """ Take down the network interface. 
-        
+        """Take down the network interface.
+
         Returns:
         True
-        
+
         """
         cmd = 'ifconfig ' + self.iface + ' down'
         if self.verbose:
             print(cmd)
         misc.Run(cmd)
         return True
-    
+
     @timedcache(2)
     @neediface("")
     def GetIfconfig(self):
-        """ Runs ifconfig and returns the output. """
+        """Runs ifconfig and returns the output."""
         cmd = "ifconfig %s" % self.iface
         if self.verbose:
             print(cmd)
@@ -522,7 +537,7 @@ class BaseInterface(object):
 
     @neediface("")
     def SetAddress(self, ip=None, netmask=None, broadcast=None):
-        """ Set the IP addresses of an interface.
+        """Set the IP addresses of an interface.
 
         Keyword arguments:
         ip -- interface IP address in dotted quad form
@@ -536,7 +551,7 @@ class BaseInterface(object):
             if not misc.IsValidIP(val):
                 print('WARNING: Invalid IP address found, aborting!')
                 return False
-        
+
         cmd = ''.join(['ifconfig ', self.iface, ' '])
         if ip:
             cmd = ''.join([cmd, ip, ' '])
@@ -549,21 +564,21 @@ class BaseInterface(object):
         misc.Run(cmd)
 
     def _parse_dhclient(self, pipe):
-        """ Parse the output of dhclient.
-        
+        """Parse the output of dhclient.
+
         Parses the output of dhclient and returns the status of
         the connection attempt.
 
         Keyword arguments:
         pipe -- stdout pipe to the dhclient process.
-        
+
         Returns:
         'success' if succesful', an error code string otherwise.
-        
+
         """
         dhclient_complete = False
         dhclient_success = False
-        
+
         while not dhclient_complete:
             line = pipe.readline()
             if line == '':  # Empty string means dhclient is done.
@@ -573,22 +588,22 @@ class BaseInterface(object):
             if line.startswith('bound'):
                 dhclient_success = True
                 dhclient_complete = True
-                
+
         return self._check_dhcp_result(dhclient_success)
-        
+
     def _parse_pump(self, pipe):
-        """ Determines if obtaining an IP using pump succeeded.
+        """Determines if obtaining an IP using pump succeeded.
 
         Keyword arguments:
         pipe -- stdout pipe to the pump process.
-        
+
         Returns:
         'success' if succesful, an error code string otherwise.
-        
+
         """
         pump_complete = False
         pump_success = True
-        
+
         while not pump_complete:
             line = pipe.readline()
             if line == '':
@@ -597,22 +612,22 @@ class BaseInterface(object):
                 pump_success = False
                 pump_complete = True
             print(misc.to_unicode(line))
-    
+
         return self._check_dhcp_result(pump_success)
 
     def _parse_dhcpcd(self, pipe):
-        """ Determines if obtaining an IP using dhcpcd succeeded.
-        
+        """Determines if obtaining an IP using dhcpcd succeeded.
+
         Keyword arguments:
         pipe -- stdout pipe to the dhcpcd process.
-        
+
         Returns:
         'success' if succesful, an error code string otherwise.
-        
+
         """
         dhcpcd_complete = False
         dhcpcd_success = True
-        
+
         while not dhcpcd_complete:
             line = pipe.readline()
             if "Error" in line or "timed out" in line:
@@ -621,11 +636,11 @@ class BaseInterface(object):
             elif line == '':
                 dhcpcd_complete = True
             print(misc.to_unicode(line))
-            
+
         return self._check_dhcp_result(dhcpcd_success)
 
     def _parse_udhcpc(self, pipe):
-        """ Determines if obtaining an IP using udhcpc succeeded.
+        """Determines if obtaining an IP using udhcpc succeeded.
 
         Keyword arguments:
         pipe -- stdout pipe to the dhcpcd process.
@@ -649,14 +664,14 @@ class BaseInterface(object):
         return self._check_dhcp_result(udhcpc_success)
 
     def _check_dhcp_result(self, success):
-        """ Print and return the correct DHCP connection result. 
-        
+        """Print and return the correct DHCP connection result.
+
         Keyword Arguments:
         success -- boolean specifying if DHCP was succesful.
-        
+
         Returns:
         'success' if success == True, 'dhcp_failed' otherwise.
-        
+
         """
         if success:
             print('DHCP connection successful')
@@ -664,30 +679,29 @@ class BaseInterface(object):
         else:
             print('DHCP connection failed')
             return 'dhcp_failed'
-            
+
     @neediface(False)
     def StartDHCP(self, hostname, staticdns):
-        """ Start the DHCP client to obtain an IP address.
+        """Start the DHCP client to obtain an IP address.
 
         Keyword Arguments:
         hostname -- the hostname to send to the DHCP server
-        
+
         Returns:
         A string representing the result of the DHCP command.  See
         _check_dhcp_result for the possible values.
-        
+
         """
         cmd = self._get_dhcp_command('connect', hostname, staticdns)
         if self.verbose:
             print(cmd)
         self.dhcp_object = misc.Run(cmd, include_stderr=True, return_obj=True)
         pipe = self.dhcp_object.stdout
-        client_dict = { misc.DHCLIENT : self._parse_dhclient,
-                        misc.DHCPCD : self._parse_dhcpcd,
-                        misc.PUMP : self._parse_pump,
-                        misc.UDHCPC : self._parse_udhcpc,
-                      }
-        
+        client_dict = {misc.DHCLIENT: self._parse_dhclient,
+                       misc.DHCPCD: self._parse_dhcpcd,
+                       misc.PUMP: self._parse_pump,
+                       misc.UDHCPC: self._parse_udhcpc}
+
         DHCP_CLIENT = self._get_dhcp_command()
         if DHCP_CLIENT in client_dict:
             ret = client_dict[DHCP_CLIENT](pipe)
@@ -696,10 +710,10 @@ class BaseInterface(object):
             ret = None
         self.dhcp_object.wait()
         return ret
-        
+
     @neediface(False)
     def ReleaseDHCP(self):
-        """ Release the DHCP lease for this interface. """
+        """Release the DHCP lease for this interface."""
         cmd = self._get_dhcp_command("release")
         if self.verbose:
             print(cmd)
@@ -707,21 +721,21 @@ class BaseInterface(object):
 
     @neediface(False)
     def DelDefaultRoute(self):
-        """ Delete only the default route for a device. """
+        """Delete only the default route for a device."""
         if self.ip_cmd and self.flush_tool in [misc.AUTO, misc.IP]:
             cmd = '%s route del default dev %s' % (self.ip_cmd, self.iface)
         elif self.route_cmd and self.flush_tool in [misc.AUTO, misc.ROUTE]:
             cmd = '%s del default dev %s' % (self.route_cmd, self.iface)
         else:
             print("No route manipulation command available!")
-            return 
+            return
         if self.verbose:
             print(cmd)
         misc.Run(cmd)
 
     @neediface(False)
     def FlushDNS(self):
-        """ Remove added DNS servers from system resolv.conf.
+        """Remove added DNS servers from system resolv.conf.
 
         Only useful for resolvconf-based setups.
 
@@ -734,9 +748,9 @@ class BaseInterface(object):
             p.communicate()
 
     @neediface(False)
-    def SetDNS(self, dns1=None, dns2=None, dns3=None, 
+    def SetDNS(self, dns1=None, dns2=None, dns3=None,
                dns_dom=None, search_dom=None):
-        """ Set the DNS of the system to the specified DNS servers.
+        """Set the DNS of the system to the specified DNS servers.
 
         Opens up resolv.conf and writes in the nameservers.
 
@@ -762,7 +776,8 @@ class BaseInterface(object):
                         print('Setting DNS : ' + dns)
                     valid_dns_list.append("nameserver %s\n" % dns)
                 else:
-                    print('DNS IP %s is not a valid IP address, skipping' % dns)
+                    print('DNS IP %s is not a valid IP address, skipping' %
+                          dns)
 
         if valid_dns_list:
             resolv_params += ''.join(valid_dns_list)
@@ -777,10 +792,10 @@ class BaseInterface(object):
             resolv = open("/etc/resolv.conf", "w")
             resolv.write(resolv_params + "\n")
             resolv.close()
-        
+
     @neediface(False)
     def FlushRoutes(self):
-        """ Flush network routes for this device. """
+        """Flush network routes for this device."""
         if self.ip_cmd and self.flush_tool in [misc.AUTO, misc.IP]:
             cmds = ['%s route flush dev %s' % (self.ip_cmd, self.iface)]
         elif self.route_cmd and self.flush_tool in [misc.AUTO, misc.ROUTE]:
@@ -795,7 +810,7 @@ class BaseInterface(object):
 
     @neediface(False)
     def SetDefaultRoute(self, gw):
-        """ Add a default route with the specified gateway.
+        """Add a default route with the specified gateway.
 
         Keyword arguments:
         gw -- gateway of the default route in dotted quad form
@@ -811,7 +826,7 @@ class BaseInterface(object):
 
     @neediface("")
     def GetIP(self, ifconfig=""):
-        """ Get the IP address of the interface.
+        """Get the IP address of the interface.
 
         Returns:
         The IP address of the interface in dotted quad form.
@@ -830,11 +845,11 @@ class BaseInterface(object):
 
     @neediface(False)
     def VerifyAPAssociation(self, gateway):
-        """ Verify assocation with an access point. 
-        
+        """Verify assocation with an access point.
+
         Verifies that an access point can be contacted by
         trying to ping it.
-        
+
         """
         if "iputils" in misc.Run(["ping", "-V"]):
             cmd = "ping -q -w 3 -c 1 %s" % gateway
@@ -852,7 +867,7 @@ class BaseInterface(object):
 
     @neediface(False)
     def IsUp(self, ifconfig=None):
-        """ Determines if the interface is up.
+        """Determines if the interface is up.
 
         Returns:
         True if the interface is up, False otherwise.
@@ -862,22 +877,21 @@ class BaseInterface(object):
         try:
             flags = open(flags_file, "r").read().strip()
         except IOError:
-            print("Could not open %s, using ifconfig to determine status" \
-                % flags_file)
+            print("Could not open %s, using ifconfig to determine status" %
+                  flags_file)
             return self._slow_is_up(ifconfig)
         return bool(int(flags, 16) & 1)
-    
+
     @neediface(False)
     def StopWPA(self):
-        """ Terminates wpa using wpa_cli"""
+        """Terminates wpa using wpa_cli"""
         cmd = 'wpa_cli -i %s terminate' % self.iface
         if self.verbose:
             print(cmd)
         misc.Run(cmd)
-        
-        
+
     def _slow_is_up(self, ifconfig=None):
-        """ Determine if an interface is up using ifconfig. """
+        """Determine if an interface is up using ifconfig."""
         if not ifconfig:
             output = self.GetIfconfig()
         else:
@@ -892,14 +906,14 @@ class BaseInterface(object):
         # check classic ifconfig output style
         for line in lines[1:4]:
             if line.strip().startswith('UP'):
-                return True   
+                return True
         return False
 
 
 class BaseWiredInterface(BaseInterface):
-    """ Control a wired network interface. """
+    """Control a wired network interface."""
     def __init__(self, iface, verbose=False):
-        """ Initialise the wired network interface class.
+        """Initialise the wired network interface class.
 
         Keyword arguments:
         iface -- name of the interface
@@ -910,7 +924,7 @@ class BaseWiredInterface(BaseInterface):
 
     @neediface(False)
     def GetPluggedIn(self):
-        """ Get the current physical connection state.
+        """Get the current physical connection state.
 
         The method will first attempt to use ethtool do determine
         physical connection state.  Should ethtool fail to run properly,
@@ -933,7 +947,7 @@ class BaseWiredInterface(BaseInterface):
                 time.sleep(2)
                 if self.IsUp() or tries > MAX_TRIES:
                     break
-      
+
         if os.path.exists(carrier_path):
             carrier = open(carrier_path, 'r')
             try:
@@ -944,12 +958,13 @@ class BaseWiredInterface(BaseInterface):
                 elif link == 0:
                     return False
             except (IOError, ValueError, TypeError):
-                print('Error checking link using /sys/class/net/%s/carrier' \
-                    % self.iface)
-                
+                print('Error checking link using /sys/class/net/%s/carrier' %
+                      self.iface)
+
         if self.ethtool_cmd and self.link_detect in [misc.ETHTOOL, misc.AUTO]:
             return self._eth_get_plugged_in()
-        elif self.miitool_cmd and self.link_detect in [misc.MIITOOL, misc.AUTO]:
+        elif self.miitool_cmd and self.link_detect in [misc.MIITOOL,
+                                                       misc.AUTO]:
             return self._mii_get_plugged_in()
         else:
             print(('Error: No way of checking for a wired connection. Make ' +
@@ -957,11 +972,11 @@ class BaseWiredInterface(BaseInterface):
             return False
 
     def _eth_get_plugged_in(self):
-        """ Use ethtool to determine the physical connection state.
-        
+        """Use ethtool to determine the physical connection state.
+
         Returns:
         True if a link is detected, False otherwise.
-        
+
         """
         cmd = "%s %s" % (self.ethtool_cmd, self.iface)
         if not self.IsUp():
@@ -971,26 +986,24 @@ class BaseWiredInterface(BaseInterface):
         if self.verbose:
             print(cmd)
         tool_data = misc.Run(cmd, include_stderr=True)
-        if misc.RunRegex(
-          re.compile('(Link detected: yes)', re.I | re.M  | re.S),
-          tool_data
-        ):
+        if misc.RunRegex(re.compile('(Link detected: yes)',
+                                    re.I | re.M | re.S), tool_data):
             return True
         else:
             return False
-    
+
     def _mii_get_plugged_in(self):
-        """ Use mii-tool to determine the physical connection state. 
-                
+        """Use mii-tool to determine the physical connection state.
+
         Returns:
         True if a link is detected, False otherwise.
-        
+
         """
         cmd = "%s %s" % (self.miitool_cmd, self.iface)
         if self.verbose:
             print(cmd)
         tool_data = misc.Run(cmd, include_stderr=True)
-        if misc.RunRegex(re.compile('(Invalid argument)', re.I | re.M  | re.S), 
+        if misc.RunRegex(re.compile('(Invalid argument)', re.I | re.M | re.S),
                          tool_data) is not None:
             print('Wired Interface is down, putting it up')
             self.Up()
@@ -998,15 +1011,15 @@ class BaseWiredInterface(BaseInterface):
             if self.verbose:
                 print(cmd)
             tool_data = misc.Run(cmd, include_stderr=True)
-        
+
         if misc.RunRegex(re.compile('(link ok)', re.I | re.M | re.S),
                          tool_data) is not None:
             return True
         else:
             return False
-        
+
     def Authenticate(self, network):
-        """ Authenticate with wpa_supplicant. """
+        """Authenticate with wpa_supplicant."""
         misc.ParseEncryption(network)
         cmd = ['wpa_supplicant', '-B', '-i', self.iface, '-c',
                os.path.join(wpath.networks, 'wired'),
@@ -1015,10 +1028,11 @@ class BaseWiredInterface(BaseInterface):
             print(cmd)
         misc.Run(cmd)
 
+
 class BaseWirelessInterface(BaseInterface):
-    """ Control a wireless network interface. """
+    """Control a wireless network interface."""
     def __init__(self, iface, verbose=False, wpa_driver='wext'):
-        """ Initialise the wireless network interface class.
+        """Initialise the wireless network interface class.
 
         Keyword arguments:
         iface -- name of the interface
@@ -1028,14 +1042,14 @@ class BaseWirelessInterface(BaseInterface):
         BaseInterface.__init__(self, iface, verbose)
         self.wpa_driver = wpa_driver
         self.scan_iface = None
-        
+
     def SetWpaDriver(self, driver):
-        """ Sets the wpa_driver. """
+        """Sets the wpa_driver."""
         self.wpa_driver = _sanitize_string(driver)
 
     @neediface(False)
     def SetEssid(self, essid):
-        """ Set the essid of the wireless interface.
+        """Set the essid of the wireless interface.
 
         Keyword arguments:
         essid -- essid to set the interface to
@@ -1048,11 +1062,11 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(False)
     def GetKillSwitchStatus(self):
-        """ Determines if the wireless killswitch is enabled.
-        
+        """Determines if the wireless killswitch is enabled.
+
         Returns:
         True if the killswitch is enabled, False otherwise.
-        
+
         """
         output = self.GetIwconfig()
 
@@ -1063,18 +1077,18 @@ class BaseWirelessInterface(BaseInterface):
             radiostatus = False
 
         return radiostatus
-    
+
     @timedcache(2)
     @neediface(False)
     def GetIwconfig(self):
-        """ Returns the output of iwconfig for this interface. """
+        """Returns the output of iwconfig for this interface."""
         cmd = "iwconfig " + self.iface
         if self.verbose:
             print(cmd)
         return misc.Run(cmd)
 
     def _FreqToChannel(self, freq):
-        """ Translate the specified frequency to a channel.
+        """Translate the specified frequency to a channel.
 
         Note: This function is simply a lookup dict and therefore the
         freq argument must be in the dict to provide a valid channel.
@@ -1088,24 +1102,25 @@ class BaseWirelessInterface(BaseInterface):
         """
         ret = None
         freq_dict = {'2.412 GHz': 1, '2.417 GHz': 2, '2.422 GHz': 3,
-                         '2.427 GHz': 4, '2.432 GHz': 5, '2.437 GHz': 6,
-                         '2.442 GHz': 7, '2.447 GHz': 8, '2.452 GHz': 9,
-                         '2.457 GHz': 10, '2.462 GHz': 11, '2.467 GHz': 12,
-                         '2.472 GHz': 13, '2.484 GHz': 14 }
+                     '2.427 GHz': 4, '2.432 GHz': 5, '2.437 GHz': 6,
+                     '2.442 GHz': 7, '2.447 GHz': 8, '2.452 GHz': 9,
+                     '2.457 GHz': 10, '2.462 GHz': 11, '2.467 GHz': 12,
+                     '2.472 GHz': 13, '2.484 GHz': 14}
         try:
             ret = freq_dict[freq]
         except KeyError:
-            print("Couldn't determine channel number for frequency:", str(freq))
-        
+            print("Couldn't determine channel number for frequency:",
+                  str(freq))
+
         return ret
 
     def _GetRalinkInfo(self):
-        """ Get a network info list used for ralink drivers
-    
+        """Get a network info list used for ralink drivers
+
         Calls iwpriv <wireless interface> get_site_survey, which
         on some ralink cards will return encryption and signal
         strength info for wireless networks in the area.
-    
+
         """
         iwpriv = misc.Run('iwpriv ' + self.iface + ' get_site_survey')
         if self.verbose:
@@ -1156,7 +1171,7 @@ class BaseWirelessInterface(BaseInterface):
         return aps
 
     def _ParseRalinkAccessPoint(self, ap, ralink_info, cell):
-        """ Parse encryption and signal strength info for ralink cards
+        """Parse encryption and signal strength info for ralink cards
 
         Keyword arguments:
         ap -- array containing info about the current access point
@@ -1179,7 +1194,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(False)
     def SetMode(self, mode):
-        """ Set the mode of the wireless interface.
+        """Set the mode of the wireless interface.
 
         Keyword arguments:
         mode -- mode to set the interface to
@@ -1197,7 +1212,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(False)
     def SetChannel(self, channel):
-        """ Set the channel of the wireless interface.
+        """Set the channel of the wireless interface.
 
         Keyword arguments:
         channel -- channel to set the interface to
@@ -1206,7 +1221,7 @@ class BaseWirelessInterface(BaseInterface):
         if not channel.isdigit():
             print('WARNING: Invalid channel found.  Aborting!')
             return False
-        
+
         cmd = 'iwconfig %s channel %s' % (self.iface, str(channel))
         if self.verbose:
             print(cmd)
@@ -1214,7 +1229,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(False)
     def SetKey(self, key):
-        """ Set the encryption key of the wireless interface.
+        """Set the encryption key of the wireless interface.
 
         Keyword arguments:
         key -- encryption key to set
@@ -1234,7 +1249,7 @@ class BaseWirelessInterface(BaseInterface):
         allow_lower -- whether to allow lower bitrates, or keep it fixed (bool)
         '''
         # FIXME: what if, in future, bitrates won't be "M(egabit per second)"
-        #+anymore?
+        # +anymore?
         if bitrate == 'auto':
             cmd = 'iwconfig %s rate auto'
         else:
@@ -1246,7 +1261,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(False)
     def Associate(self, essid, channel=None, bssid=None):
-        """ Associate with the specified wireless network.
+        """Associate with the specified wireless network.
 
         Keyword arguments:
         essid -- essid of the network
@@ -1266,19 +1281,19 @@ class BaseWirelessInterface(BaseInterface):
             if self.verbose:
                 print(cmd)
             misc.Run(cmd)
-        
+
     def GeneratePSK(self, network):
-        """ Generate a PSK using wpa_passphrase. 
+        """Generate a PSK using wpa_passphrase.
 
         Keyword arguments:
         network -- dictionary containing network info
-        
+
         """
         wpa_pass_path = misc.find_path('wpa_passphrase')
         if not wpa_pass_path:
             return None
-        key_pattern = re.compile('network={.*?\spsk=(.*?)\n}.*',
-                                 re.I | re.M  | re.S)
+        key_pattern = re.compile(r'network={.*?\spsk=(.*?)\n}.*',
+                                 re.I | re.M | re.S)
         cmd = [wpa_pass_path, str(network['essid']), str(network['key'])]
         if self.verbose:
             print(cmd)
@@ -1286,7 +1301,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(False)
     def Authenticate(self, network):
-        """ Authenticate with the specified wireless network.
+        """Authenticate with the specified wireless network.
 
         Keyword arguments:
         network -- dictionary containing network info
@@ -1301,7 +1316,7 @@ class BaseWirelessInterface(BaseInterface):
             else:
                 driver = '-D' + self.wpa_driver
             cmd = ['wpa_supplicant', '-B', '-i', self.iface, '-c',
-                   os.path.join(wpath.networks, 
+                   os.path.join(wpath.networks,
                                 network['bssid'].replace(':', '').lower()),
                    driver]
             if self.verbose:
@@ -1309,7 +1324,7 @@ class BaseWirelessInterface(BaseInterface):
             misc.Run(cmd)
 
     def _AuthenticateRalinkLegacy(self, network):
-        """ Authenticate with the specified wireless network.
+        """Authenticate with the specified wireless network.
 
         This function handles Ralink legacy cards that cannot use
         wpa_supplicant.
@@ -1318,14 +1333,14 @@ class BaseWirelessInterface(BaseInterface):
         network -- dictionary containing network info
 
         """
-        if network.get('key') != None:
+        if network.get('key') is not None:
             try:
                 info = self._GetRalinkInfo()[network.get('bssid')]
             except KeyError:
-                print("Could not find current network in iwpriv " + \
+                print("Could not find current network in iwpriv "
                       "get_site_survey results.  Cannot authenticate.")
                 return
-            
+
             if info['enctype'] == "WEP" and info['authtype'] == 'OPEN':
                 print('Setting up WEP')
                 cmd = ''.join(['iwconfig ', self.iface, ' key ',
@@ -1342,7 +1357,7 @@ class BaseWirelessInterface(BaseInterface):
                 cmd_list.append('%(keyname)s="%(key)s"' % network)
                 if info['nettype'] == 'SHARED' and info['enctype'] == 'WEP':
                     cmd_list.append('DefaultKeyID=1')
-    
+
                 for cmd in cmd_list:
                     cmd = ['iwpriv', self.iface, 'set', cmd]
                     if self.verbose:
@@ -1351,7 +1366,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface([])
     def GetNetworks(self, essid=None):
-        """ Get a list of available wireless networks.
+        """Get a list of available wireless networks.
 
         Returns:
         A list containing available wireless networks.
@@ -1360,8 +1375,10 @@ class BaseWirelessInterface(BaseInterface):
 
         cmd = 'iwlist ' + self.iface + ' scan'
 
-        # If there is a hidden essid then it was set earlier, with iwconfig wlan0 essid,
-	# but on some drivers (iwlwifi, in my case) we have to pass it to iwlist scan.
+        # If there is a hidden essid then it was set earlier, with
+        # iwconfig wlan0 essid,
+        # but on some drivers (iwlwifi, in my case) we have to pass it to
+        # iwlist scan.
         essid = misc.Noneify(essid)
         if essid is not None:
             print('Passing hidden essid to iwlist scan: ' + essid)
@@ -1374,7 +1391,7 @@ class BaseWirelessInterface(BaseInterface):
         # this way we can look at only one network at a time.
         # The spaces around '   Cell ' are to minimize the chance that someone
         # has an essid named Cell...
-        networks = results.split( '   Cell ' )
+        networks = results.split('   Cell ')
 
         # Get available network info from iwpriv get_site_survey
         # if we're using a ralink card (needed to get encryption info)
@@ -1395,14 +1412,14 @@ class BaseWirelessInterface(BaseInterface):
                     # Normally we only get duplicate bssids with hidden
                     # networks.  If we hit this, we only want the entry
                     # with the real essid to be in the network list.
-                    if (entry['bssid'] not in access_points 
-                        or not entry['hidden']):
+                    if (entry['bssid'] not in access_points
+                            or not entry['hidden']):
                         access_points[entry['bssid']] = entry
 
         return list(access_points.values())
-    
+
     def _ParseAccessPoint(self, cell, ralink_info):
-        """ Parse a single cell from the output of iwlist.
+        """Parse a single cell from the output of iwlist.
 
         Keyword arguments:
         cell -- string containing the cell information
@@ -1436,7 +1453,7 @@ class BaseWirelessInterface(BaseInterface):
         # Channel - For cards that don't have a channel number,
         # convert the frequency.
         ap['channel'] = misc.RunRegex(channel_pattern, cell)
-        if ap['channel'] == None:
+        if ap['channel'] is None:
             freq = misc.RunRegex(freq_pattern, cell)
             ap['channel'] = self._FreqToChannel(freq)
 
@@ -1445,7 +1462,10 @@ class BaseWirelessInterface(BaseInterface):
         m = re.findall(bitrates_pattern, bitrates)
         if m:
             # numeric sort
-            ap['bitrates'] = sorted(m, key=cmp_to_key(lambda x, y: int(float(x) - float(y))))
+            ap['bitrates'] = sorted(m,
+                                    key=functools.
+                                    cmp_to_key(lambda x, y:
+                                               int(float(x) - float(y))))
         else:
             ap['bitrates'] = None
 
@@ -1487,13 +1507,14 @@ class BaseWirelessInterface(BaseInterface):
         # quality displayed or it isn't found)
         if misc.RunRegex(signaldbm_pattern, cell):
             ap['strength'] = misc.RunRegex(signaldbm_pattern, cell)
-        elif self.wpa_driver != RALINK_DRIVER:  # This is already set for ralink
+        # This is already set for ralink
+        elif self.wpa_driver != RALINK_DRIVER:
             ap['strength'] = -1
 
         return ap
 
     def ValidateAuthentication(self, auth_time):
-        """ Validate WPA authentication.
+        """Validate WPA authentication.
 
             Validate that the wpa_supplicant authentication
             process was successful.
@@ -1501,10 +1522,10 @@ class BaseWirelessInterface(BaseInterface):
             NOTE: It's possible this could return False,
             though in reality wpa_supplicant just isn't
             finished yet.
-            
+
             Keyword arguments:
             auth_time -- The time at which authentication began.
-            
+
             Returns:
             True if wpa_supplicant authenticated succesfully,
             False otherwise.
@@ -1543,18 +1564,17 @@ class BaseWirelessInterface(BaseInterface):
 
         print('wpa_supplicant authentication may have failed.')
         return False
-        
 
     def _ForceSupplicantScan(self):
-        """ Force wpa_supplicant to rescan available networks.
-    
+        """Force wpa_supplicant to rescan available networks.
+
         This function forces wpa_supplicant to rescan.
         This works around authentication validation sometimes failing for
-        wpa_supplicant because it remains in a DISCONNECTED state for 
+        wpa_supplicant because it remains in a DISCONNECTED state for
         quite a while, after which a rescan is required, and then
         attempting to authenticate.  This whole process takes a long
         time, so we manually speed it up if we see it happening.
-        
+
         """
         print('wpa_supplicant rescan forced...')
         cmd = 'wpa_cli -i' + self.iface + ' scan'
@@ -1562,34 +1582,34 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface("")
     def GetBSSID(self, iwconfig=None):
-        """ Get the MAC address for the interface. """
+        """Get the MAC address for the interface."""
         if not iwconfig:
             output = self.GetIwconfig()
         else:
             output = iwconfig
-            
+
         bssid = misc.RunRegex(bssid_pattern, output)
         return bssid
 
     @neediface("")
     def GetCurrentBitrate(self, iwconfig=None):
-        """ Get the current bitrate for the interface. """
+        """Get the current bitrate for the interface."""
         if not iwconfig:
             output = self.GetIwconfig()
         else:
             output = iwconfig
-            
+
         bitrate = misc.RunRegex(bitrate_pattern, output)
         return bitrate
 
     @neediface("")
     def GetOperationalMode(self, iwconfig=None):
-        """ Get the operational mode for the interface. """
+        """Get the operational mode for the interface."""
         if not iwconfig:
             output = self.GetIwconfig()
         else:
             output = iwconfig
-            
+
         opmode = misc.RunRegex(opmode_pattern, output)
         if opmode:
             opmode = opmode.strip()
@@ -1597,7 +1617,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface("")
     def GetAvailableAuthMethods(self, iwlistauth=None):
-        """ Get the available authentication methods for the interface. """
+        """Get the available authentication methods for the interface."""
         if not iwlistauth:
             cmd = 'iwlist ' + self.iface + ' auth'
             if self.verbose:
@@ -1605,14 +1625,14 @@ class BaseWirelessInterface(BaseInterface):
             output = misc.Run(cmd)
         else:
             output = iwlistauth
-            
+
         authm = misc.RunRegex(authmethods_pattern, output)
         authm_list = [m.strip() for m in authm.split('\n') if m.strip()]
         return ';'.join(authm_list)
 
     @neediface('')
     def GetAvailableBitrates(self):
-        """ Get the available bitrates the wifi card can use. """
+        """Get the available bitrates the wifi card can use."""
 
         cmd = 'iwlist ' + self.iface + ' rate'
         if self.verbose:
@@ -1626,7 +1646,7 @@ class BaseWirelessInterface(BaseInterface):
         return dbus.Array(rates, signature='v')
 
     def _get_link_quality(self, output):
-        """ Parse out the link quality from iwlist scan or iwconfig output. """
+        """Parse out the link quality from iwlist scan or iwconfig output."""
         try:
             [(strength, max_strength)] = strength_pattern.findall(output)
         except ValueError:
@@ -1634,12 +1654,13 @@ class BaseWirelessInterface(BaseInterface):
 
         if strength in ['', None]:
             try:
-                [(strength, max_strength)] = altstrength_pattern.findall(output)
+                [(strength,
+                  max_strength)] = altstrength_pattern.findall(output)
             except ValueError:
                 # if the pattern was unable to match anything
                 # we'll return 101, which will allow us to stay
                 # connected even though we don't know the strength
-                # it also allows us to tell if 
+                # it also allows us to tell if
                 return 101
         if strength not in ['', None] and max_strength:
             return (100 * int(strength) // int(max_strength))
@@ -1650,7 +1671,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface(-1)
     def GetSignalStrength(self, iwconfig=None):
-        """ Get the signal strength of the current network.
+        """Get the signal strength of the current network.
 
         Returns:
         The signal strength.
@@ -1661,10 +1682,10 @@ class BaseWirelessInterface(BaseInterface):
         else:
             output = iwconfig
         return self._get_link_quality(output)
-    
+
     @neediface(-100)
     def GetDBMStrength(self, iwconfig=None):
-        """ Get the dBm signal strength of the current network.
+        """Get the dBm signal strength of the current network.
 
         Returns:
         The dBm signal strength.
@@ -1679,7 +1700,7 @@ class BaseWirelessInterface(BaseInterface):
 
     @neediface("")
     def GetCurrentNetwork(self, iwconfig=None):
-        """ Get the essid of the current network.
+        """Get the essid of the current network.
 
         Returns:
         The current network essid.

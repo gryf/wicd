@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" Suspends the wicd daemon.
+"""Suspends the wicd daemon.
 
 Sets a flag in the daemon that will stop it from monitoring network status.
 Used for when a laptop enters hibernation/suspension.
@@ -23,10 +23,10 @@ Used for when a laptop enters hibernation/suspension.
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import sys
 
 import dbus
 import dbus.service
-import sys
 
 try:
     bus = dbus.SystemBus()

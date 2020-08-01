@@ -1,1 +1,1 @@
-""" WICD core module. """
+"""WICD core module."""

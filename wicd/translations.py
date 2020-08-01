@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -* coding: utf-8 -*-
 
-""" translations -- module for handling the translation strings for wicd. """
+"""translations -- module for handling the translation strings for wicd."""
 #
 #   Copyright (C) 2007 - 2009 Adam Blackburn
 #   Copyright (C) 2007 - 2009 Dan O'Reilly
@@ -21,12 +21,12 @@
 #
 import locale
 import os
-from . import wpath
+from wicd import wpath
 import gettext
 
 
 def get_gettext():
-    """ Set up gettext for translations. """
+    """Set up gettext for translations."""
     # Borrowed from an excellent post on how to do this at
     # http://www.learningpython.com/2006/12/03/translating-your-pythonpygtk-application/
     local_path = wpath.translations
@@ -41,8 +41,8 @@ def get_gettext():
     try:
         # This avoids a bug: locale.getdefaultlocale() prefers
         # LC_CTYPE over LANG/LANGUAGE
-        lc, encoding = locale.getdefaultlocale(envvars=('LC_MESSAGES', 
-                                                        'LC_ALL', 'LANG', 
+        lc, encoding = locale.getdefaultlocale(envvars=('LC_MESSAGES',
+                                                        'LC_ALL', 'LANG',
                                                         'LANGUAGE'))
     except ValueError as e:
         print((str(e)))
@@ -50,11 +50,11 @@ def get_gettext():
     if (lc):
         langs += [lc]
     langs += ["en_US"]
-    lang = gettext.translation('wicd', local_path, languages=langs, 
+    lang = gettext.translation('wicd', local_path, languages=langs,
                                fallback=True)
     return lang.gettext
 
-_ = get_gettext()
+_ = get_gettext()  # noqa
 
 
 # language[] should contain only strings in encryption templates, which
@@ -66,13 +66,15 @@ language = {}
 # FIXME: these were present in wicd 1.7.0, can't find where they are.
 # Leaving here for future reference, they should be removed whenever
 # possible.
-#language['cannot_start_daemon'] = _('Unable to connect to wicd daemon ' + \
-#    'DBus interface. This typically means there was a problem starting ' + \
-#    'the daemon. Check the wicd log for more information.')
-#language['backend_alert'] = _('Changes to your backend won't occur until ' + \
-#    'the daemon is restarted.')
-#language['about_help'] = _('Stop a network connection in progress')
-#language['connect'] = _('Connect')
+# language['cannot_start_daemon'] = _('Unable to connect to wicd daemon '
+#                                     'DBus interface. This typically means '
+#                                     'there was a problem starting the '
+#                                     'daemon. Check the wicd log for more '
+#                                     'information.')
+# language['backend_alert'] = _('Changes to your backend won't occur until '
+#                               'the daemon is restarted.')
+# language['about_help'] = _('Stop a network connection in progress')
+# language['connect'] = _('Connect')
 
 # from templates, dict populated with:
 # grep -R "*" encryption/templates/ | tr " " "\n" | grep "^*" | \

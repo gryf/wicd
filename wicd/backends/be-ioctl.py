@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-""" ioctl Network interface control tools for wicd.
+"""ioctl Network interface control tools for wicd.
 
 This module implements functions to control and obtain information from
 network interfaces.  It utilizes ioctl calls and python modules to
@@ -30,18 +30,33 @@ class WirelessInterface() -- Control a wireless network interface.
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+import array
+import fcntl
+import os
+import socket
+import struct
+import time
+
 from wicd import misc
 from wicd import wpath
-from wicd.wnettools import GetDefaultGateway, GetWiredInterfaces, \
-GetWirelessInterfaces, IsValidWpaSuppDriver, BaseWirelessInterface, \
-BaseWiredInterface, BaseInterface, GetWpaSupplicantDrivers, wep_pattern, \
-signaldbm_pattern, neediface
+from wicd.wnettools import BaseInterface
+from wicd.wnettools import BaseWiredInterface
+from wicd.wnettools import BaseWirelessInterface
+from wicd.wnettools import GetDefaultGateway
+from wicd.wnettools import GetWiredInterfaces
+from wicd.wnettools import GetWirelessInterfaces
+from wicd.wnettools import GetWpaSupplicantDrivers
+from wicd.wnettools import IsValidWpaSuppDriver
+from wicd.wnettools import neediface
+from wicd.wnettools import signaldbm_pattern
+from wicd.wnettools import wep_pattern
 
 try:
     import iwscan
     IWSCAN_AVAIL = True
 except ImportError:
-    print("WARNING: python-iwscan not found, falling back to using iwlist scan.")
+    print("WARNING: python-iwscan not found, falling back to using iwlist "
+          "scan.")
     IWSCAN_AVAIL = False
 try:
     import wpactrl
@@ -49,14 +64,6 @@ try:
 except ImportError:
     print("WARNING: python-wpactrl not found, falling back to using wpa_cli.")
     WPACTRL_AVAIL = False
-
-import re
-import os
-import time
-import socket
-import fcntl
-import struct
-import array
 
 
 NAME = "ioctl"
@@ -90,7 +97,7 @@ SIOCGIFFLAGS = 0x8913
 
 
 def get_iw_ioctl_result(iface, call):
-    """ Makes the given ioctl call and returns the results.
+    """Makes the given ioctl call and returns the results.
 
     Keyword arguments:
     call -- The ioctl call to make
@@ -112,15 +119,16 @@ def get_iw_ioctl_result(iface, call):
         return None
     return buff.tostring()
 
+
 def NeedsExternalCalls(*args, **kargs):
-    """ Return False, since this backend doesn't use any external apps. """
+    """Return False, since this backend doesn't use any external apps."""
     return False
 
 
 class Interface(BaseInterface):
-    """ Control a network interface. """
+    """Control a network interface."""
     def __init__(self, iface, verbose=False):
-        """ Initialise the object.
+        """Initialise the object.
 
         Keyword arguments:
         iface -- the name of the interface
@@ -132,13 +140,13 @@ class Interface(BaseInterface):
         self.Check()
 
     def CheckWirelessTools(self):
-        """ Check for the existence needed wireless tools """
+        """Check for the existence needed wireless tools"""
         if not WPACTRL_AVAIL:
             BaseInterface.CheckWirelessTools(self)
 
     @neediface("")
     def GetIP(self, ifconfig=""):
-        """ Get the IP address of the interface.
+        """Get the IP address of the interface.
 
         Returns:
         The IP address of the interface in dotted quad form.
@@ -156,7 +164,7 @@ class Interface(BaseInterface):
 
     @neediface(False)
     def IsUp(self, ifconfig=None):
-        """ Determines if the interface is up.
+        """Determines if the interface is up.
 
         Returns:
         True if the interface is up, False otherwise.
@@ -175,9 +183,9 @@ class Interface(BaseInterface):
 
 
 class WiredInterface(Interface, BaseWiredInterface):
-    """ Control a wired network interface. """
+    """Control a wired network interface."""
     def __init__(self, iface, verbose=False):
-        """ Initialise the wired network interface class.
+        """Initialise the wired network interface class.
 
         Keyword arguments:
         iface -- name of the interface
@@ -189,7 +197,7 @@ class WiredInterface(Interface, BaseWiredInterface):
 
     @neediface(False)
     def GetPluggedIn(self):
-        """ Get the current physical connection state.
+        """Get the current physical connection state.
 
         The method will first attempt to use ethtool do determine
         physical connection state.  Should ethtool fail to run properly,
@@ -201,7 +209,8 @@ class WiredInterface(Interface, BaseWiredInterface):
         """
         if self.ethtool_cmd and self.link_detect in [misc.ETHTOOL, misc.AUTO]:
             return self._eth_get_plugged_in()
-        elif self.miitool_cmd and self.link_detect in [misc.MIITOOL, misc.AUTO]:
+        elif self.miitool_cmd and self.link_detect in [misc.MIITOOL,
+                                                       misc.AUTO]:
             return self._mii_get_plugged_in()
         else:
             print(('Error: No way of checking for a wired connection. Make' +
@@ -209,7 +218,7 @@ class WiredInterface(Interface, BaseWiredInterface):
             return False
 
     def _eth_get_plugged_in(self):
-        """ Use ethtool to determine the physical connection state.
+        """Use ethtool to determine the physical connection state.
 
         Returns:
         True if a link is detected, False otherwise.
@@ -231,7 +240,7 @@ class WiredInterface(Interface, BaseWiredInterface):
         return bool(buff.tolist()[1])
 
     def _mii_get_plugged_in(self):
-        """ Use mii-tool to determine the physical connection state. 
+        """Use mii-tool to determine the physical connection state.
 
         Returns:
         True if a link is detected, False otherwise.
@@ -253,25 +262,24 @@ class WiredInterface(Interface, BaseWiredInterface):
 
 
 class WirelessInterface(Interface, BaseWirelessInterface):
-    """ Control a wireless network interface. """
+    """Control a wireless network interface."""
     def __init__(self, iface, verbose=False, wpa_driver='wext'):
-        """ Initialise the wireless network interface class.
+        """Initialise the wireless network interface class.
 
         Keyword arguments:
         iface -- name of the interface
         verbose -- print all commands
 
         """
-        BaseWirelessInterface.__init__(self, iface, verbose,
-                                                 wpa_driver)
+        BaseWirelessInterface.__init__(self, iface, verbose, wpa_driver)
         Interface.__init__(self, iface, verbose)
         self.scan_iface = None
         self.CheckWirelessTools()
 
     @neediface([])
     def GetNetworks(self, essid=None):
-        """ Get a list of available wireless networks.
-	
+        """Get a list of available wireless networks.
+
         NOTE: the essid parameter is not used here,
         it was added for the iwlist scan for hidden networks.
 
@@ -282,7 +290,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         if not IWSCAN_AVAIL:
             # Use the slow version if python-iwscan isn't available.
             return BaseWirelessInterface.GetNetworks(self)
-        
+
         if not self.scan_iface:
             try:
                 self.scan_iface = iwscan.WirelessInterface(self.iface)
@@ -298,7 +306,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         return [_f for _f in [self._parse_ap(cell) for cell in results] if _f]
 
     def _parse_ap(self, cell):
-        """ Parse a single cell from the python-iwscan list. """
+        """Parse a single cell from the python-iwscan list."""
         ap = {}
         try:
             ap['essid'] = misc.to_unicode(cell['essid'])
@@ -306,7 +314,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
             print('Unicode problem with the current network essid, ignoring!!')
             return None
 
-        if ap['essid'] in [ "", '<hidden>']:
+        if ap['essid'] in ["", '<hidden>']:
             ap['essid'] = '<hidden>'
             ap['hidden'] = True
         else:
@@ -344,13 +352,14 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         # quality displayed or it isn't found)
         if misc.RunRegex(signaldbm_pattern, cell["stats"]):
             ap['strength'] = misc.RunRegex(signaldbm_pattern, cell["stats"])
-        elif self.wpa_driver != RALINK_DRIVER:  # This is already set for ralink
-            ap['strength'] = -1  
+        # This is already set for ralink
+        elif self.wpa_driver != RALINK_DRIVER:
+            ap['strength'] = -1
 
         return ap
 
     def _connect_to_wpa_ctrl_iface(self):
-        """ Connect to the wpa ctrl interface. """
+        """Connect to the wpa ctrl interface."""
         ctrl_iface = '/var/run/wpa_supplicant'
         socket_loc = os.path.join(ctrl_iface, self.iface)
         if os.path.exists(socket_loc):
@@ -360,12 +369,12 @@ class WirelessInterface(Interface, BaseWirelessInterface):
                 print(("Couldn't open ctrl_interface: %s" % e))
                 return None
         else:
-            print(("Couldn't find a wpa_supplicant ctrl_interface for iface %s" \
-                % self.iface))
+            print(f"Couldn't find a wpa_supplicant ctrl_interface for iface "
+                  f"{self.iface}")
             return None
 
     def ValidateAuthentication(self, auth_time):
-        """ Validate WPA authentication.
+        """Validate WPA authentication.
 
             Validate that the wpa_supplicant authentication
             process was successful.
@@ -384,8 +393,9 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         """
         if not WPACTRL_AVAIL:
             # If we don't have python-wpactrl, use the slow version.
-            return BaseWirelessInterface.ValidateAuthentication(self, auth_time)
-        
+            return BaseWirelessInterface.ValidateAuthentication(self,
+                                                                auth_time)
+
         # Right now there's no way to do this for ralink drivers
         if self.wpa_driver == RALINK_DRIVER:
             return True
@@ -401,16 +411,16 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         while (time.time() - auth_time) < MAX_TIME:
             try:
                 status = wpa.request("STATUS").split("\n")
-            except:
+            except Exception:
                 print("wpa_supplicant status query failed.")
                 return False
 
             if self.verbose:
-                print(('wpa_supplicant ctrl_interface status query is %s' \
-                    % str(status)))
+                print(f'wpa_supplicant ctrl_interface status query is '
+                      f'{status}')
 
             try:
-                [result] = [l for l in status if l.startswith("wpa_state=")]
+                [result] = [s for s in status if s.startswith("wpa_state=")]
             except ValueError:
                 return False
 
@@ -431,7 +441,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
 
     @neediface(False)
     def StopWPA(self):
-        """ Terminates wpa_supplicant using its ctrl interface. """
+        """Terminates wpa_supplicant using its ctrl interface."""
         if not WPACTRL_AVAIL:
             return BaseWirelessInterface.StopWPA(self)
         wpa = self._connect_to_wpa_ctrl_iface()
@@ -440,7 +450,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         wpa.request("TERMINATE")
 
     def _AuthenticateRalinkLegacy(self, network):
-        """ Authenticate with the specified wireless network.
+        """Authenticate with the specified wireless network.
 
         This function handles Ralink legacy cards that cannot use
         wpa_supplicant.
@@ -449,58 +459,60 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         network -- dictionary containing network info
 
         """
-        if network.get('key') != None:
-            lines = self._GetRalinkInfo()
-            for x in lines:
-                info = x.split()
-                if len(info) < 5:
-                    break
-                if info[2] == network.get('essid'):
-                    if info[5] == 'WEP' or (info[5] == 'OPEN' and \
-                                            info[4] == 'WEP'):
+        if network.get('key') is None:
+            return
+
+        lines = self._GetRalinkInfo()
+        for x in lines:
+            info = x.split()
+            if len(info) < 5:
+                break
+            if info[2] == network.get('essid'):
+                if info[5] == 'WEP' or (info[5] == 'OPEN' and
+                                        info[4] == 'WEP'):
+                    print('Setting up WEP')
+                    cmd = ''.join(['iwconfig ', self.iface, ' key ',
+                                   network.get('key')])
+                    if self.verbose:
+                        print(cmd)
+                    misc.Run(cmd)
+                else:
+                    if info[5] == 'SHARED' and info[4] == 'WEP':
                         print('Setting up WEP')
-                        cmd = ''.join(['iwconfig ', self.iface, ' key ',
-                                       network.get('key')])
+                        auth_mode = 'SHARED'
+                        key_name = 'Key1'
+                    elif info[5] == 'WPA-PSK':
+                        print('Setting up WPA-PSK')
+                        auth_mode = 'WPAPSK'
+                        key_name = 'WPAPSK'
+                    elif info[5] == 'WPA2-PSK':
+                        print('Setting up WPA2-PSK')
+                        auth_mode = 'WPA2PSK'
+                        key_name = 'WPAPSK'
+                    else:
+                        print("Unknown AuthMode, can\'t complete connection "
+                              "process!")
+                        return
+
+                    cmd_list = []
+                    cmd_list.append('NetworkType=' + info[6])
+                    cmd_list.append('AuthMode=' + auth_mode)
+                    cmd_list.append('EncrypType=' + info[4])
+                    cmd_list.append('SSID=' + info[2])
+                    cmd_list.append(key_name + '=' + network.get('key'))
+                    if info[5] == 'SHARED' and info[4] == 'WEP':
+                        cmd_list.append('DefaultKeyID=1')
+                    cmd_list.append('SSID=' + info[2])
+
+                    for cmd in cmd_list:
+                        cmd = 'iwpriv ' + self.iface + ' '
                         if self.verbose:
                             print(cmd)
                         misc.Run(cmd)
-                    else:
-                        if info[5] == 'SHARED' and info[4] == 'WEP':
-                            print('Setting up WEP')
-                            auth_mode = 'SHARED'
-                            key_name = 'Key1'
-                        elif info[5] == 'WPA-PSK':
-                            print('Setting up WPA-PSK')
-                            auth_mode = 'WPAPSK'
-                            key_name = 'WPAPSK'
-                        elif info[5] == 'WPA2-PSK':
-                            print('Setting up WPA2-PSK')
-                            auth_mode = 'WPA2PSK'
-                            key_name = 'WPAPSK'
-                        else:
-                            print(('Unknown AuthMode, can\'t complete ' + \
-                                  'connection process!'))
-                            return
-
-                        cmd_list = []
-                        cmd_list.append('NetworkType=' + info[6])
-                        cmd_list.append('AuthMode=' + auth_mode)
-                        cmd_list.append('EncrypType=' + info[4])
-                        cmd_list.append('SSID=' + info[2])
-                        cmd_list.append(key_name + '=' + network.get('key'))
-                        if info[5] == 'SHARED' and info[4] == 'WEP':
-                            cmd_list.append('DefaultKeyID=1')
-                        cmd_list.append('SSID=' + info[2])
-
-                        for cmd in cmd_list:
-                            cmd = 'iwpriv ' + self.iface + ' '
-                            if self.verbose:
-                                print(cmd)
-                            misc.Run(cmd)
 
     @neediface("")
     def GetBSSID(self, iwconfig=None):
-        """ Get the MAC address for the interface. """
+        """Get the MAC address for the interface."""
         data = (self.iface + '\0' * 32)[:32]
         try:
             result = fcntl.ioctl(self.sock.fileno(), SIOCGIWAP, data)[16:]
@@ -513,7 +525,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
 
     @neediface("")
     def GetCurrentBitrate(self, iwconfig=None):
-        """ Get the current bitrate for the interface. """
+        """Get the current bitrate for the interface."""
         data = (self.iface + '\0' * 32)[:32]
         fmt = "ihbb"
         size = struct.calcsize(fmt)
@@ -526,19 +538,19 @@ class WirelessInterface(Interface, BaseWirelessInterface):
         f, e, x, x = struct.unpack(fmt, result[:size])
         return "%s %s" % ((f / 1000000), 'Mb/s')
 
-    #def GetOperationalMode(self, iwconfig=None):
-    #    """ Get the operational mode for the interface. """
-    #    TODO: implement me
-    #    return ''
+    # def GetOperationalMode(self, iwconfig=None):
+    #     """ Get the operational mode for the interface."""
+    #     TODO: implement me
+    #     return ''
 
-    #def GetAvailableAuthMethods(self, iwlistauth=None):
-    #    """ Get the authentication methods for the interface. """
-    #    TODO: Implement me
-    #    return ''
+    # def GetAvailableAuthMethods(self, iwlistauth=None):
+    #     """ Get the authentication methods for the interface."""
+    #     TODO: Implement me
+    #     return ''
 
     @neediface(-1)
     def GetSignalStrength(self, iwconfig=None):
-        """ Get the signal strength of the current network.
+        """Get the signal strength of the current network.
 
         Returns:
         The signal strength.
@@ -555,7 +567,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
             return None
 
     def _get_max_strength(self):
-        """ Gets the maximum possible strength from the wireless driver. """
+        """Gets the maximum possible strength from the wireless driver."""
         buff = array.array('c', '\0' * 700)
         addr, length = buff.buffer_info()
         arg = struct.pack('Pi', addr, length)
@@ -576,7 +588,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
 
     @neediface(-100)
     def GetDBMStrength(self, iwconfig=None):
-        """ Get the dBm signal strength of the current network.
+        """Get the dBm signal strength of the current network.
 
         Returns:
         The dBm signal strength.
@@ -590,7 +602,7 @@ class WirelessInterface(Interface, BaseWirelessInterface):
 
     @neediface("")
     def GetCurrentNetwork(self, iwconfig=None):
-        """ Get the essid of the current network.
+        """Get the essid of the current network.
 
         Returns:
         The current network essid.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -* coding: utf-8 -*-
 
-""" curses_misc.py: Module for various widgets that are used throughout
+"""curses_misc.py: Module for various widgets that are used throughout
 wicd-curses.
 """
 
@@ -51,7 +51,7 @@ class SelText(urwid.Text):
 
 
 class NSelListBox(urwid.ListBox):
-    """ Non-selectable ListBox. """
+    """Non-selectable ListBox."""
     def selectable(self):
         return False
 
@@ -69,7 +69,7 @@ class DynWrap(urwid.AttrWrap):
     """
     # pylint: disable-msg=W0231
     def __init__(self, w, sensitive=True, attrs=('editbx', 'editnfc'),
-      focus_attr='editfc'):
+                 focus_attr='editfc'):
         self._attrs = attrs
         self._sensitive = sensitive
 
@@ -82,11 +82,11 @@ class DynWrap(urwid.AttrWrap):
         self.__super.__init__(w, cur_attr, focus_attr)
 
     def get_sensitive(self):
-        """ Getter for sensitive property. """
+        """Getter for sensitive property."""
         return self._sensitive
 
     def set_sensitive(self, state):
-        """ Setter for sensitive property. """
+        """Setter for sensitive property."""
         if state:
             self.set_attr(self._attrs[0])
         else:
@@ -95,11 +95,11 @@ class DynWrap(urwid.AttrWrap):
     property(get_sensitive, set_sensitive)
 
     def get_attrs(self):
-        """ Getter for attrs property. """
+        """Getter for attrs property."""
         return self._attrs
 
     def set_attrs(self, attrs):
-        """ Setter for attrs property. """
+        """Setter for attrs property."""
         self._attrs = attrs
     property(get_attrs, set_attrs)
 
@@ -108,10 +108,10 @@ class DynWrap(urwid.AttrWrap):
 
 
 class DynEdit(DynWrap):
-    """ Edit DynWrap'ed to the most common specifications. """
+    """Edit DynWrap'ed to the most common specifications."""
     # pylint: disable-msg=W0231
     def __init__(self, caption='', edit_text='', sensitive=True,
-      attrs=('editbx', 'editnfc'), focus_attr='editfc'):
+                 attrs=('editbx', 'editnfc'), focus_attr='editfc'):
         caption = ('editcp', caption + ': ')
         edit = urwid.Edit(caption, edit_text)
         # pylint: disable-msg=E1101
@@ -119,10 +119,10 @@ class DynEdit(DynWrap):
 
 
 class DynIntEdit(DynWrap):
-    """ IntEdit DynWrap'ed to the most common specifications. """
+    """IntEdit DynWrap'ed to the most common specifications."""
     # pylint: disable-msg=W0231
     def __init__(self, caption='', edit_text='', sensitive=True,
-      attrs=('editbx', 'editnfc'), focus_attr='editfc'):
+                 attrs=('editbx', 'editnfc'), focus_attr='editfc'):
         caption = ('editcp', caption + ':')
         edit = urwid.IntEdit(caption, edit_text)
         # pylint: disable-msg=E1101
@@ -130,20 +130,20 @@ class DynIntEdit(DynWrap):
 
 
 class DynRadioButton(DynWrap):
-    """ RadioButton DynWrap'ed to the most common specifications. """
+    """RadioButton DynWrap'ed to the most common specifications."""
     # pylint: disable-msg=W0231
     def __init__(self, group, label, state='first True', on_state_change=None,
-      user_data=None, sensitive=True, attrs=('body', 'editnfc'),
-      focus_attr='body'):
-        #caption = ('editcp', caption + ':')
+                 user_data=None, sensitive=True, attrs=('body', 'editnfc'),
+                 focus_attr='body'):
+        # caption = ('editcp', caption + ':')
         button = urwid.RadioButton(group, label, state, on_state_change,
-            user_data)
+                                   user_data)
         # pylint: disable-msg=E1101
         self.__super.__init__(button, sensitive, attrs, focus_attr)
 
 
 class MaskingEditException(Exception):
-    """ Custom exception. """
+    """Custom exception."""
     pass
 
 
@@ -159,31 +159,31 @@ class MaskingEdit(urwid.Edit):
     """
     # pylint: disable-msg=W0231
     def __init__(self, caption="", edit_text="", multiline=False, align='left',
-      wrap='space', allow_tab=False, edit_pos=None, layout=None,
-      mask_mode="always", mask_char='*'):
+                 wrap='space', allow_tab=False, edit_pos=None, layout=None,
+                 mask_mode="always", mask_char='*'):
         self.mask_mode = mask_mode
         if len(mask_char) > 1:
-            raise MaskingEditException('Masks of more than one character are' +
-            ' not supported!')
+            raise MaskingEditException('Masks of more than one character are '
+                                       'not supported!')
         self.mask_char = mask_char
         # pylint: disable-msg=E1101
         self.__super.__init__(caption, edit_text, multiline, align, wrap,
-            allow_tab, edit_pos, layout)
+                              allow_tab, edit_pos, layout)
 
     def get_caption(self):
-        """ Return caption. """
+        """Return caption."""
         return self.caption
 
     def get_mask_mode(self):
-        """ Getter for mask_mode property. """
+        """Getter for mask_mode property."""
         return self.mask_mode
 
     def set_mask_mode(self, mode):
-        """ Setter for mask_mode property."""
+        """Setter for mask_mode property."""
         self.mask_mode = mode
 
     def get_masked_text(self):
-        """ Get masked out text. """
+        """Get masked out text."""
         return self.mask_char * len(self.get_edit_text())
 
     def render(self, xxx_todo_changeme, focus=False):
@@ -195,8 +195,8 @@ class MaskingEdit(urwid.Edit):
         if self.mask_mode == "off" or (self.mask_mode == 'no_focus' and focus):
             # pylint: disable-msg=E1101
             canv = self.__super.render((maxcol, ), focus)
-            # The cache messes this thing up, because I am totally changing what
-            # is displayed.
+            # The cache messes this thing up, because I am totally changing
+            # what is displayed.
             self._invalidate()
             return canv
 
@@ -226,9 +226,10 @@ class TabColumns(urwid.WidgetWrap):
     # FIXME Make the bottom_part optional
     # pylint: disable-msg=W0231
     def __init__(self, tab_str, tab_wid, title, bottom_part=None,
-      attr=('body', 'focus'), attrsel='tab active', attrtitle='header'):
-        #self.bottom_part = bottom_part
-        #title_wid = urwid.Text((attrtitle, title), align='right')
+                 attr=('body', 'focus'), attrsel='tab active',
+                 attrtitle='header'):
+        # self.bottom_part = bottom_part
+        # title_wid = urwid.Text((attrtitle, title), align='right')
         column_list = []
         for w in tab_str:
             text, trash = w.get_text()
@@ -238,31 +239,31 @@ class TabColumns(urwid.WidgetWrap):
         self.tab_map = dict(list(zip(tab_str, tab_wid)))
         self.active_tab = tab_str[0]
         self.columns = urwid.Columns(column_list, dividechars=1)
-        #walker = urwid.SimpleListWalker([self.columns, tab_wid[0]])
-        #self.listbox = urwid.ListBox(walker)
+        # walker = urwid.SimpleListWalker([self.columns, tab_wid[0]])
+        # self.listbox = urwid.ListBox(walker)
         self.gen_pile(tab_wid[0], True)
         self.frame = urwid.Frame(self.pile)
         # pylint: disable-msg=E1101
         self.__super.__init__(self.frame)
 
     def gen_pile(self, lbox, firstrun=False):
-        """ Make the pile in the middle. """
-        self.pile = urwid.Pile([
-            ('fixed', 1, urwid.Filler(self.columns, 'top')),
-            urwid.Filler(lbox, 'top', height=('relative', 99)),
-            #('fixed', 1, urwid.Filler(self.bottom_part, 'bottom'))
-            ])
+        """Make the pile in the middle."""
+        self.pile = urwid.Pile([('fixed', 1,
+                                 urwid.Filler(self.columns, 'top')),
+                                urwid.Filler(lbox, 'top',
+                                             height=('relative', 99))])
+        # ('fixed', 1, urwid.Filler(self.bottom_part, 'bottom'))])
         if not firstrun:
             self.frame.set_body(self.pile)
             self._w = self.frame
             self._invalidate()
 
     def selectable(self):
-        """ Return whether the widget is selectable. """
+        """Return whether the widget is selectable."""
         return True
 
     def keypress(self, size, key):
-        """ Handle keypresses. """
+        """Handle keypresses."""
         # If the key is page up or page down, move focus to the tabs and call
         # left or right on the tabs.
         if key == "page up" or key == "page down":
@@ -285,7 +286,7 @@ class TabColumns(urwid.WidgetWrap):
         return key
 
     def mouse_event(self, size, event, button, x, y, focus):
-        """ Handle mouse events. """
+        """Handle mouse events."""
         wid = self.pile.get_focus().get_body()
         if wid == self.columns:
             self.active_tab.set_attr('body')
@@ -299,7 +300,7 @@ class TabColumns(urwid.WidgetWrap):
 
 
 class ComboBoxException(Exception):
-    """ Custom exception. """
+    """Custom exception."""
     pass
 
 
@@ -314,39 +315,40 @@ class ComboBox(urwid.WidgetWrap):
     class ComboSpace(urwid.WidgetWrap):
         """The actual menu-like space that comes down from the ComboBox"""
         # pylint: disable-msg=W0231
-        def __init__(self, l, body, ui, show_first, pos=(0, 0),
-          attr=('body', 'focus')):
+        def __init__(self, data, body, ui, show_first, pos=(0, 0),
+                     attr=('body', 'focus')):
             """
             body      : parent widget
-            l         : stuff to include in the combobox
+            data      : stuff to include in the combobox
             ui        : the screen
             show_first: index of the element in the list to pick first
             pos       : a tuple of (row,col) where to put the list
             attr      : a tuple of (attr_no_focus,attr_focus)
             """
 
-            #Calculate width and height of the menu widget:
-            height = len(l)
+            # Calculate width and height of the menu widget:
+            height = len(data)
             width = 0
-            for entry in l:
+            for entry in data:
                 if len(entry) > width:
                     width = len(entry)
             content = [urwid.AttrWrap(SelText(w), attr[0], attr[1])
-                       for w in l]
+                       for w in data]
             self._listbox = urwid.ListBox(content)
             self._listbox.set_focus(show_first)
 
-            overlay = urwid.Overlay(self._listbox, body, ('fixed left', pos[0]),
-                                    width + 2, ('fixed top', pos[1]), height)
+            overlay = urwid.Overlay(self._listbox, body,
+                                    ('fixed left', pos[0]), width + 2,
+                                    ('fixed top', pos[1]), height)
             # pylint: disable-msg=E1101
             self.__super.__init__(overlay)
 
         def show(self, ui, display):
-            """ Show widget. """
+            """Show widget."""
             dim = ui.get_cols_rows()
             keys = True
 
-            #Event loop:
+            # Event loop:
             while True:
                 if keys:
                     ui.draw_screen(dim, self.render(dim, True))
@@ -363,19 +365,19 @@ class ComboBox(urwid.WidgetWrap):
                     return text
 
                 for k in keys:
-                    #Send key to underlying widget:
+                    # Send key to underlying widget:
                     self._w.keypress(dim, k)
 
-        #def get_size(self):
+        # def get_size(self):
 
     # pylint: disable-msg=W0231
-    def __init__(self, label='', l=None, attrs=('body', 'editnfc'),
-      focus_attr='focus', use_enter=True, focus=0, callback=None,
-      user_args=None):
+    def __init__(self, label='', data=None, attrs=('body', 'editnfc'),
+                 focus_attr='focus', use_enter=True, focus=0, callback=None,
+                 user_args=None):
         """
         label     : bit of text that preceeds the combobox.  If it is "", then
                     ignore it
-        l         : stuff to include in the combobox
+        data      : stuff to include in the combobox
         body      : parent widget
         ui        : the screen
         row       : where this object is to be found onscreen
@@ -388,15 +390,15 @@ class ComboBox(urwid.WidgetWrap):
         self.label = urwid.Text(label)
         self.attrs = attrs
         self.focus_attr = focus_attr
-        if l is None:
-            l = []
-        self.list = l
+        if data is None:
+            data = []
+        self.list = data
 
         s, trash = self.label.get_text()
 
         self.overlay = None
         self.cbox = DynWrap(SelText(self.DOWN_ARROW), attrs=attrs,
-            focus_attr=focus_attr)
+                            focus_attr=focus_attr)
         # Unicode will kill me sooner or later.
         if label != '':
             w = urwid.Columns(
@@ -424,12 +426,12 @@ class ComboBox(urwid.WidgetWrap):
         self.ui = None
         self.row = None
 
-    def set_list(self, l):
-        """ Populate widget list. """
-        self.list = l
+    def set_list(self, data):
+        """Populate widget list."""
+        self.list = data
 
     def set_focus(self, index):
-        """ Set widget focus. """
+        """Set widget focus."""
         if urwid.VERSION < (1, 1, 0):
             self.focus = index
         else:
@@ -447,11 +449,11 @@ class ComboBox(urwid.WidgetWrap):
             self.overlay._listbox.set_focus(index)
 
     def rebuild_combobox(self):
-        """ Rebuild combobox. """
+        """Rebuild combobox."""
         self.build_combobox(self.parent, self.ui, self.row)
 
     def build_combobox(self, parent, ui, row):
-        """ Build combobox. """
+        """Build combobox."""
         s, trash = self.label.get_text()
 
         if urwid.VERSION < (1, 1, 0):
@@ -460,16 +462,16 @@ class ComboBox(urwid.WidgetWrap):
             index = self._w.focus_position  # pylint: disable-msg=E1103
 
         self.cbox = DynWrap(SelText([self.list[index] + self.DOWN_ARROW]),
-            attrs=self.attrs, focus_attr=self.focus_attr)
+                            attrs=self.attrs, focus_attr=self.focus_attr)
         if str != '':
             w = urwid.Columns([('fixed', len(s), self.label), self.cbox],
-                dividechars=1)
+                              dividechars=1)
             self.overlay = self.ComboSpace(self.list, parent, ui, index,
-                pos=(len(s) + 1, row))
+                                           pos=(len(s) + 1, row))
         else:
             w = urwid.Columns([self.cbox])
             self.overlay = self.ComboSpace(self.list, parent, ui, index,
-                pos=(0, row))
+                                           pos=(0, row))
 
         self._w = w
         self._invalidate()
@@ -479,7 +481,7 @@ class ComboBox(urwid.WidgetWrap):
 
     # If we press space or enter, be a combo box!
     def keypress(self, size, key):
-        """ Handle keypresses. """
+        """Handle keypresses."""
         activate = key == ' '
         if self.use_enter:
             activate = activate or key == 'enter'
@@ -490,43 +492,43 @@ class ComboBox(urwid.WidgetWrap):
             retval = self.overlay.show(self.ui, self.parent)
             if retval is not None:
                 self.set_focus(self.list.index(retval))
-                #self.cbox.set_w(SelText(retval+'    vvv'))
+                # self.cbox.set_w(SelText(retval+'    vvv'))
                 if self.callback is not None:
                     self.callback(self, self.overlay._listbox.get_focus()[1],
-                        self.user_args)
+                                  self.user_args)
         return self._w.keypress(size, key)
 
     def selectable(self):
-        """ Return whether the widget is selectable. """
+        """Return whether the widget is selectable."""
         return self.cbox.selectable()
 
     def get_focus(self):
-        """ Return widget focus. """
+        """Return widget focus."""
         if self.overlay:
             return self.overlay._listbox.get_focus()
         else:
             if urwid.VERSION < (1, 1, 0):
                 return None, self.focus
             else:
-                return None, self._w.focus_position  # pylint: disable-msg=E1103
+                return None, self._w.focus_position
 
     def get_sensitive(self):
-        """ Return widget sensitivity. """
+        """Return widget sensitivity."""
         return self.cbox.get_sensitive()
 
     def set_sensitive(self, state):
-        """ Set widget sensitivity. """
+        """Set widget sensitivity."""
         self.cbox.set_sensitive(state)
 
 
 # This is a h4x3d copy of some of the code in Ian Ward's dialog.py example.
 class DialogExit(Exception):
-    """ Custom exception. """
+    """Custom exception."""
     pass
 
 
 class Dialog2(urwid.WidgetWrap):
-    """ Base class for other dialogs. """
+    """Base class for other dialogs."""
     def __init__(self, text, height, width, body=None):
         self.buttons = None
 
@@ -553,28 +555,28 @@ class Dialog2(urwid.WidgetWrap):
 
     # buttons: tuple of name,exitcode
     def add_buttons(self, buttons):
-        """ Add buttons. """
-        l = []
+        """Add buttons."""
+        data = []
         maxlen = 0
         for name, exitcode in buttons:
             b = urwid.Button(name, self.button_press)
             b.exitcode = exitcode
             b = urwid.AttrWrap(b, 'body', 'focus')
-            l.append(b)
+            data.append(b)
             maxlen = max(len(name), maxlen)
         maxlen += 4  # because of '< ... >'
-        self.buttons = urwid.GridFlow(l, maxlen, 3, 1, 'center')
+        self.buttons = urwid.GridFlow(data, maxlen, 3, 1, 'center')
         self.frame.footer = urwid.Pile([
             urwid.Divider(),
             self.buttons
         ], focus_item=1)
 
     def button_press(self, button):
-        """ Handle button press. """
+        """Handle button press."""
         raise DialogExit(button.exitcode)
 
     def run(self, ui, parent):
-        """ Run the UI. """
+        """Run the UI."""
         ui.set_mouse_tracking()
         size = ui.get_cols_rows()
         overlay = urwid.Overlay(
@@ -597,7 +599,7 @@ class Dialog2(urwid.WidgetWrap):
                     if check_mouse_event(k):
                         event, button, col, row = k
                         overlay.mouse_event(size, event, button, col, row,
-                            focus=True)
+                                            focus=True)
                     else:
                         if k == 'window resize':
                             size = ui.get_cols_rows()
@@ -610,20 +612,20 @@ class Dialog2(urwid.WidgetWrap):
             return self.on_exit(e.args[0])
 
     def on_exit(self, exitcode):
-        """ Handle dialog exit. """
+        """Handle dialog exit."""
         return exitcode, ""
 
     def unhandled_key(self, size, key):
-        """ Handle keypresses. """
+        """Handle keypresses."""
         pass
 
 
 class TextDialog(Dialog2):
-    """ Simple dialog with text and "OK" button. """
+    """Simple dialog with text and "OK" button."""
     def __init__(self, text, height, width, header=None, align='left',
-        buttons=(_('OK'), 1)):
-        l = [urwid.Text(text)]
-        body = urwid.ListBox(l)
+                 buttons=(_('OK'), 1)):
+        data = [urwid.Text(text)]
+        body = urwid.ListBox(data)
         body = urwid.AttrWrap(body, 'body')
 
         Dialog2.__init__(self, header, height + 2, width + 2, body)
@@ -633,7 +635,7 @@ class TextDialog(Dialog2):
             self.add_buttons([buttons])
 
     def unhandled_key(self, size, k):
-        """ Handle keys. """
+        """Handle keys."""
         if k in ('up', 'page up', 'down', 'page down'):
             self.frame.set_focus('body')
             self.view.keypress(size, k)
@@ -641,7 +643,7 @@ class TextDialog(Dialog2):
 
 
 class InputDialog(Dialog2):
-    """ Simple dialog with text and entry. """
+    """Simple dialog with text and entry."""
     def __init__(self, text, height, width, ok_name=_('OK'), edit_text=''):
         self.edit = urwid.Edit(wrap='clip', edit_text=edit_text)
         body = urwid.ListBox([self.edit])
@@ -653,7 +655,7 @@ class InputDialog(Dialog2):
         self.add_buttons([(ok_name, 0), (_('Cancel'), -1)])
 
     def unhandled_key(self, size, k):
-        """ Handle keys. """
+        """Handle keys."""
         if k in ('up', 'page up'):
             self.frame.set_focus('body')
         if k in ('down', 'page down'):
@@ -664,12 +666,12 @@ class InputDialog(Dialog2):
             self.view.keypress(size, k)
 
     def on_exit(self, exitcode):
-        """ Handle dialog exit. """
+        """Handle dialog exit."""
         return exitcode, self.edit.get_edit_text()
 
 
 class ClickCols(urwid.WidgetWrap):
-    """ Clickable menubar. """
+    """Clickable menubar."""
     # pylint: disable-msg=W0231
     def __init__(self, items, callback=None, args=None):
         cols = urwid.Columns(items)
@@ -679,27 +681,29 @@ class ClickCols(urwid.WidgetWrap):
         self.args = args
 
     def mouse_event(self, size, event, button, x, y, focus):
-        """ Handle mouse events. """
+        """Handle mouse events."""
         if event == "mouse press":
-            # The keypress dealie in wicd-curses.py expects a list of keystrokes
+            # The keypress dealie in wicd-curses.py expects a list of
+            # keystrokes
             self.callback([self.args])
 
 
 class OptCols(urwid.WidgetWrap):
-    """ Htop-style menubar on the bottom of the screen. """
+    """Htop-style menubar on the bottom of the screen."""
     # tuples = [(key,desc)], on_event gets passed a key
     # attrs = (attr_key,attr_desc)
     # handler = function passed the key of the "button" pressed
     # mentions of 'left' and right will be converted to <- and -> respectively
     # pylint: disable-msg=W0231
-    def __init__(self, tuples, handler, attrs=('body', 'infobar'), debug=False):
+    def __init__(self, tuples, handler, attrs=('body', 'infobar'),
+                 debug=False):
         # Find the longest string.  Keys for this bar should be no greater than
         # 2 characters long (e.g., -> for left)
-        #maxlen = 6
-        #for i in tuples:
-        #    newmax = len(i[0])+len(i[1])
-        #    if newmax > maxlen:
-        #        maxlen = newmax
+        # maxlen = 6
+        # for i in tuples:
+        #     newmax = len(i[0])+len(i[1])
+        #     if newmax > maxlen:
+        #         maxlen = newmax
 
         # Construct the texts
         textList = []
@@ -719,7 +723,7 @@ class OptCols(urwid.WidgetWrap):
             else:
                 callback = handler
                 args = cmd[0]
-            #self.callbacks.append(cmd[2])
+            # self.callbacks.append(cmd[2])
             col = ClickCols([
                 ('fixed', len(key) + 1, urwid.Text((attrs[0], key + ':'))),
                 urwid.AttrWrap(urwid.Text(cmd[1]), attrs[1])],
@@ -736,10 +740,10 @@ class OptCols(urwid.WidgetWrap):
         self.__super.__init__(cols)
 
     def debugClick(self, args):
-        """ Debug clicks. """
+        """Debug clicks."""
         self.debug.set_text(args)
 
     def mouse_event(self, size, event, button, x, y, focus):
-        """ Handle mouse events. """
+        """Handle mouse events."""
         # Widgets are evenly long (as of current), so...
         return self._w.mouse_event(size, event, button, x, y, focus)
