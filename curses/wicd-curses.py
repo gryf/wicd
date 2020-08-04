@@ -1145,9 +1145,9 @@ class appGUI():
         if not ui._started:
             return False
 
-        input_data = ui.get_input_nonblocking()
+        input_data = ui.get_input()
         # Resolve any "alarms" in the waiting
-        self.handle_keys(input_data[1])
+        self.handle_keys(input_data)
 
         # Update the screen
         canvas = self.frame.render((self.size), True)
@@ -1211,6 +1211,7 @@ def main():
     # This is a wrapper around a function that calls another a function that
     # is a wrapper around a infinite loop.  Fun.
     urwid.set_encoding('utf8')
+
     ui.run_wrapper(run)
 
 
@@ -1275,20 +1276,21 @@ setup_dbus()
 
 
 if __name__ == '__main__':
-    try:
-        parser = OptionParser(version="wicd-curses-%s (using wicd %s)" %
-                              (CURSES_REV, daemon.Hello()),
-                              prog="wicd-curses")
-    except Exception as e:
-        if "DBus.Error.AccessDenied" in e.get_dbus_name():
-            print(_('ERROR: wicd-curses was denied access to the wicd daemon: '
-                    'please check that your user is in the "$A" group.')
-                  .replace('$A', '\033[1;34m' + wpath.wicd_group + '\033[0m'))
-            sys.exit(1)
-        else:
-            raise
+    #try:
+    #    parser = OptionParser(version="wicd-curses-%s (using wicd %s)" %
+    #                          (CURSES_REV, daemon.Hello()),
+    #                          prog="wicd-curses")
+    #except Exception as e:
+    #    if "DBus.Error.AccessDenied" in e.get_dbus_name():
+    #        print(_('ERROR: wicd-curses was denied access to the wicd daemon: '
+    #                'please check that your user is in the "$A" group.')
+    #              .replace('$A', '\033[1;34m' + wpath.wicd_group + '\033[0m'))
+    #        sys.exit(1)
+    #    else:
+    #        raise
     # parser.add_option("-d", "--debug", action="store_true", dest='debug',
     #     help="enable logging of wicd-curses (currently does nothing)")
 
+    parser = OptionParser(prog="wicd-curses")
     (options, args) = parser.parse_args()
     main()
