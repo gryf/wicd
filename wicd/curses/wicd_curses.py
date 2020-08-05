@@ -1167,7 +1167,7 @@ class appGUI():
         self.update_status()
 
 
-def main():
+def run():
     """Main function."""
     global ui, dlogger
     # We are not python.
@@ -1274,7 +1274,7 @@ def setup_dbus(force=True):
 setup_dbus()
 
 
-if __name__ == '__main__':
+def main():
     try:
         parser = OptionParser(version="wicd-curses-%s (using wicd %s)" %
                               (CURSES_REV, daemon.Hello()),
@@ -1291,4 +1291,8 @@ if __name__ == '__main__':
     #     help="enable logging of wicd-curses (currently does nothing)")
 
     (options, args) = parser.parse_args()
+    run()
+
+
+if __name__ == "__main__":
     main()

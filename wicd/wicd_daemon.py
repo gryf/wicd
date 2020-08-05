@@ -1790,7 +1790,7 @@ def daemonize():
     os.dup2(0, 2)
 
 
-def main(argv):
+def run(argv):
     """The main daemon program.
 
     Keyword arguments:
@@ -1962,7 +1962,7 @@ def on_exit(child_pid):
     sys.exit(0)
 
 
-if __name__ == '__main__':
+def main():
     if os.getuid() != 0:
         print("Root privileges are required for the daemon to run properly. "
               "Exiting.")
@@ -1970,4 +1970,8 @@ if __name__ == '__main__':
     # No more needed since PyGObject 3.11, c.f.
     # https://wiki.gnome.org/PyGObject/Threading
     # gobject.threads_init()
-    main(sys.argv)
+    run(sys.argv)
+
+
+if __name__ == '__main__':
+    main()

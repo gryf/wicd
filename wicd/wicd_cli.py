@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-
 """Scriptable command-line interface."""
 #       This program is free software; you can redistribute it and/or modify
 #       it under the terms of the GNU General Public License as published by
@@ -324,4 +323,10 @@ if options.save and options.network > -1:
 if not op_performed:
     print("No operations performed.")
 
-sys.exit(exit_status)
+
+def main():
+    sys.exit(exit_status)
+
+
+if __name__ == "__main__":
+    main()
