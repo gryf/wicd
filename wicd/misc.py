@@ -29,6 +29,7 @@ import re
 from pipes import quote
 import socket
 import string
+import subprocess
 from subprocess import Popen, STDOUT, PIPE, call
 from subprocess import getoutput
 import sys
@@ -151,7 +152,8 @@ def Run(cmd, include_stderr=False, return_pipe=False,
 
     try:
         f = Popen(cmd, shell=False, stdout=PIPE, stdin=std_in, stderr=err,
-                  close_fds=fds, cwd='/', env=tmpenv)
+                  close_fds=fds, cwd='/', env=tmpenv,
+                  encoding=sys.getdefaultencoding())
     except OSError as e:
         print(("Running command %s failed: %s" % (str(cmd), str(e))))
         return ""
@@ -161,7 +163,7 @@ def Run(cmd, include_stderr=False, return_pipe=False,
     if return_pipe:
         return f.stdout
     else:
-        return f.communicate()[0].decode()
+        return f.communicate()[0]
 
 
 def LaunchAndWait(cmd):
