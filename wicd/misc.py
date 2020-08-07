@@ -22,7 +22,7 @@ throughout wicd.
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-from itertools import repeat, chain
+import itertools
 import locale
 import os
 import re
@@ -661,27 +661,6 @@ def timeout_add(time, func, milli=False):
         return gobject.timeout_add(time, func)
 
 
-def izip_longest(*args, **kwds):
-    """Implement the itertools.izip_longest method.
-
-    We implement the method here because its new in Python 2.6.
-
-    """
-    # izip_longest('ABCD', 'xy', fillvalue='-') --> Ax By C- D-
-    fillvalue = kwds.get('fillvalue')
-
-    def sentinel(counter=([fillvalue]*(len(args)-1)).pop):
-        yield counter()  # yields the fillvalue, or raises IndexError
-
-    fillers = repeat(fillvalue)
-    iters = [chain(it, sentinel(), fillers) for it in args]
-    try:
-        for tup in zip(*iters):
-            yield tup
-    except IndexError:
-        pass
-
-
 def grouper(n, iterable, fillvalue=None):
     """Iterate over several elements at once
 
@@ -689,4 +668,4 @@ def grouper(n, iterable, fillvalue=None):
 
     """
     args = [iter(iterable)] * n
-    return zip_longest(fillvalue=fillvalue, *args)
+    return itertools.zip_longest(fillvalue=fillvalue, *args)
