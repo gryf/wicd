@@ -24,7 +24,11 @@ import urwid.curses_display
 
 from wicd import misc
 from wicd.translations import _
-from curses_misc import SelText, DynWrap, DynRadioButton, ComboBox, TabColumns
+from wicd.curses.curses_misc import SelText
+from wicd.curses.curses_misc import DynWrap
+from wicd.curses.curses_misc import DynRadioButton
+from wicd.curses.curses_misc import ComboBox
+from wicd.curses.curses_misc import TabColumns
 
 daemon = None
 wireless = None

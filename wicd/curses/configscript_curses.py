@@ -31,8 +31,10 @@ import urwid.curses_display
 
 from wicd.translations import _
 
-from configscript import write_scripts, get_script_info
-from configscript import none_to_blank, blank_to_none
+from wicd.curses.configscript import blank_to_none
+from wicd.curses.configscript import get_script_info
+from wicd.curses.configscript import none_to_blank
+from wicd.curses.configscript import write_scripts
 
 ui = None
 frame = None

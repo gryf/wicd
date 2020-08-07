@@ -51,12 +51,20 @@ from wicd import dbusmanager
 from wicd.translations import _
 
 # Curses UIs for other stuff
-from curses_misc import ComboBox, Dialog2, NSelListBox, SelText, OptCols
-from curses_misc import TextDialog, InputDialog, error, DynEdit, DynIntEdit
-from prefs_curses import PrefsDialog
-
-import netentry_curses
-from netentry_curses import WirelessSettingsDialog, WiredSettingsDialog
+from wicd.curses.curses_misc import OptCols
+from wicd.curses.curses_misc import SelText
+from wicd.curses.curses_misc import NSelListBox
+from wicd.curses.curses_misc import Dialog2
+from wicd.curses.curses_misc import ComboBox
+from wicd.curses.curses_misc import DynIntEdit
+from wicd.curses.curses_misc import DynEdit
+from wicd.curses.curses_misc import error
+from wicd.curses.curses_misc import InputDialog
+from wicd.curses.curses_misc import TextDialog
+from wicd.curses.prefs_curses import PrefsDialog
+from wicd.curses import netentry_curses
+from wicd.curses.netentry_curses import WirelessSettingsDialog
+from wicd.curses.netentry_curses import WiredSettingsDialog
 
 # Stuff about getting the script configurer running
 # from grp import getgrgid
@@ -1167,7 +1175,7 @@ class appGUI():
         self.update_status()
 
 
-def run():
+def main_entry():
     """Main function."""
     global ui, dlogger
     # We are not python.
@@ -1291,7 +1299,7 @@ def main():
     #     help="enable logging of wicd-curses (currently does nothing)")
 
     (options, args) = parser.parse_args()
-    run()
+    main_entry()
 
 
 if __name__ == "__main__":

@@ -23,7 +23,8 @@ form!
 import os
 
 import urwid
-from curses_misc import DynWrap, MaskingEdit, ComboBox, error
+
+from wicd.curses.curses_misc import DynWrap, MaskingEdit, ComboBox, error
 import wicd.misc as misc
 from wicd.misc import noneToString, stringToNone, noneToBlankString, to_bool
 

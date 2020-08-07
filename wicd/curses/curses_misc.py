@@ -21,11 +21,11 @@ wicd-curses.
 #       along with this program; if not, write to the Free Software
 #       Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
 #       MA 02110-1301, USA.
+from functools import reduce
 
 import urwid
 
 from wicd.translations import _
-from functools import reduce
 
 
 # Uses code that is towards the bottom
