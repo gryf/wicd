@@ -1,3 +1,14 @@
+Wicd 2.0 Series
+---------------
+
+2.0.0
+    - Drop Python 2 support
+    - Python 3 support
+    - Removed GTK/Gnome (incompatibility with pygtk)
+    - Consolidated python modules under common wicd one
+    - Simplified setup.py
+
+
 Wicd 1.7 Series
 ---------------
 
