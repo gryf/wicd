@@ -38,7 +38,6 @@ import struct
 import time
 
 from wicd import misc
-from wicd import wpath
 from wicd.wnettools import BaseInterface
 from wicd.wnettools import BaseWiredInterface
 from wicd.wnettools import BaseWirelessInterface

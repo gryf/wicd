@@ -22,12 +22,12 @@ Manages and loads the pluggable backends for wicd.
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
-
-import sys
 import os
 
-import wicd.wpath as wpath
+import wicd.backends as bck
+
+
+BACKENDS = {x.split('_')[1]: x for x in dir(bck) if not x.startswith('__')}
 
 
 def fail(backend_name, reason):
@@ -40,7 +40,6 @@ class BackendManager(object):
     """Manages, validates, and loads wicd backends."""
     def __init__(self):
         """Initialize the backend manager."""
-        self.backend_dir = wpath.backends
         self.__loaded_backend = None
 
     def _valid_backend_file(self, be_file):
@@ -58,11 +57,7 @@ class BackendManager(object):
 
     def get_available_backends(self):
         """Returns a list of all valid backends in the backend directory."""
-        be_list = []
-        for f in os.listdir(self.backend_dir):
-            if self._valid_backend_file(os.path.join(self.backend_dir, f)):
-                be_list.append(f[3:-3])
-        return be_list or [""]
+        return list(BACKENDS)
 
     def get_update_interval(self):
         """Returns how often in seconds the wicd monitor should update."""
@@ -73,24 +68,10 @@ class BackendManager(object):
 
     def get_backend_description(self, backend_name):
         """Loads a backend and returns its description."""
-        backend = self._load_backend(backend_name)
-        if backend and backend.DESCRIPTION:
-            return backend.DESCRIPTION
-        else:
+        try:
+            return BACKENDS[backend_name].DESCRIPTION
+        except KeyError:
             return "No backend data available"
-
-    def _load_backend(self, backend_name):
-        """Imports a backend and returns the loaded module."""
-        print(('trying to load backend %s' % backend_name))
-        backend_path = os.path.join(self.backend_dir,
-                                    'be-' + backend_name + '.py')
-        if self._valid_backend_file(backend_path):
-            sys.path.insert(0, self.backend_dir)
-            backend = __import__('be-' + backend_name)
-            return backend
-        else:
-            fail(backend_name, 'Invalid backend file.')
-            return None
 
     def _validate_backend(self, backend, backend_name):
         """Ensures that a backend module is valid."""
@@ -116,8 +97,9 @@ class BackendManager(object):
         valid.
 
         """
-        backend = self._load_backend(backend_name)
-        if not backend:
+        try:
+            backend = BACKENDS[backend_name]
+        except KeyError:
             return None
 
         failed = self._validate_backend(backend, backend_name)
