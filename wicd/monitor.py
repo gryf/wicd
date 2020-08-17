@@ -29,15 +29,10 @@ import time
 from gi.repository import GLib as gobject
 from dbus import DBusException
 
-from wicd import wpath
 from wicd import misc
 from wicd import dbusmanager
 
 misc.RenameProcess("wicd-monitor")
-
-if __name__ == '__main__':
-    wpath.chdir(__file__)
-
 dbusmanager.connect_to_dbus()
 dbus_dict = dbusmanager.get_dbus_ifaces()
 daemon = dbus_dict["daemon"]
