@@ -40,7 +40,7 @@ from gi.repository import GLib as gobject
 from wicd.translations import _
 
 # wicd imports
-from wicd import wpath
+from wicd.config import CFG
 
 # Connection state constants
 NOT_CONNECTED = 0
@@ -212,7 +212,7 @@ def IsValidIPv6(ip):
 
 def PromptToStartDaemon():
     """Prompt the user to start the daemon"""
-    daemonloc = wpath.sbin + 'wicd'
+    daemonloc = os.path.join(CFG.sbin, 'wicd')
     sudo_prog = choose_sudo_prog()
     if not sudo_prog:
         return False
@@ -307,8 +307,9 @@ def ParseEncryption(network):
     and creating a config file for it
 
     """
-    enctemplate = open(wpath.encryption + network["enctype"])
-    template = enctemplate.readlines()
+    with open(os.path.join(CFG.encryption, network["enctype"])) as fobj:
+        template = fobj.readlines()
+
     if network.get('essid'):
         config_file = "ap_scan=1\n"
     else:
@@ -348,7 +349,7 @@ def ParseEncryption(network):
         file_name = network['bssid'].replace(":", "").lower()
     else:
         file_name = 'wired'
-    file_loc = os.path.join(wpath.networks, file_name)
+    file_loc = os.path.join(CFG.networks, file_name)
     f = open(file_loc, "w")
     os.chmod(file_loc, 0o600)
     os.chown(file_loc, 0, 0)
@@ -371,7 +372,8 @@ def LoadEncryptionMethods(wired=False):
     else:
         active_fname = "active"
     try:
-        enctypes = open(wpath.encryption + active_fname, "r").readlines()
+        with open(os.path.join(CFG.encryption, active_fname), "r") as fobj:
+            enctypes = fobj.readlines()
     except IOError as e:
         print("Fatal Error: template index file is missing.")
         raise IOError(e)
@@ -405,7 +407,7 @@ def _parse_enc_template(enctype):
         return line.replace(key, "").replace("=", "").strip()
 
     try:
-        f = open(os.path.join(wpath.encryption, enctype), "r")
+        f = open(os.path.join(CFG.encryption, enctype), "r")
     except IOError:
         print(("Failed to open template file %s" % enctype))
         return None

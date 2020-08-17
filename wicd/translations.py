@@ -19,17 +19,18 @@
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import gettext
 import locale
 import os
-from wicd import wpath
-import gettext
+
+from wicd.config import CFG
 
 
 def get_gettext():
     """Set up gettext for translations."""
     # Borrowed from an excellent post on how to do this at
     # http://www.learningpython.com/2006/12/03/translating-your-pythonpygtk-application/
-    local_path = wpath.translations
+    local_path = CFG.translations
     langs = []
     osLanguage = os.environ.get('LANGUAGE', None)
     if osLanguage:

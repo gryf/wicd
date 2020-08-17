@@ -48,12 +48,10 @@ from signal import SIGTERM
 from functools import cmp_to_key
 
 # wicd imports
+from wicd.config import CFG
 from wicd import misc
-from wicd import wpath
 from wicd.backend import BackendManager
 
-if __name__ == '__main__':
-    wpath.chdir(__file__)
 
 BACKEND = None
 BACKEND_MGR = BackendManager()
@@ -227,7 +225,7 @@ class Controller(object):
             mac = 'X'
         if name in (None, ''):
             name = 'X'
-        misc.ExecuteScripts(wpath.predisconnectscripts, self.debug,
+        misc.ExecuteScripts(CFG.predisconnectscripts, self.debug,
                             extra_parameters=(nettype, name, mac))
         if self.pre_disconnect_script:
             print('Running pre-disconnect script')
@@ -241,7 +239,7 @@ class Controller(object):
         iface.FlushDNS()
         iface.Down()
         iface.Up()
-        misc.ExecuteScripts(wpath.postdisconnectscripts, self.debug,
+        misc.ExecuteScripts(CFG.postdisconnectscripts, self.debug,
                             extra_parameters=(nettype, name, mac))
         if self.post_disconnect_script:
             print('Running post-disconnect script')
@@ -965,7 +963,7 @@ class WirelessConnectThread(ConnectThread):
         self.is_connecting = True
 
         # Run pre-connection script.
-        self.run_scripts(wpath.preconnectscripts,
+        self.run_scripts(CFG.preconnectscripts,
                          extra_parameters=('wireless', self.network['essid'],
                                            self.network['bssid']))
         self.run_script_if_needed(self.before_script, 'pre-connection',
@@ -1013,7 +1011,7 @@ class WirelessConnectThread(ConnectThread):
         self.verify_association(wiface)
 
         # Run post-connection script.
-        self.run_scripts(wpath.postconnectscripts,
+        self.run_scripts(CFG.postconnectscripts,
                          extra_parameters=('wireless', self.network['essid'],
                                            self.network['bssid']))
         self.run_script_if_needed(self.after_script, 'post-connection',
@@ -1235,7 +1233,7 @@ class WiredConnectThread(ConnectThread):
         self.is_connecting = True
 
         # Run pre-connection script.
-        self.run_scripts(wpath.preconnectscripts,
+        self.run_scripts(CFG.preconnectscripts,
                          extra_parameters=('wired', 'wired',
                                            self.network['profilename']))
         self.run_script_if_needed(self.before_script, 'pre-connection',
@@ -1262,7 +1260,7 @@ class WiredConnectThread(ConnectThread):
         self.set_dns_addresses(liface)
 
         # Run post-connection script.
-        self.run_scripts(wpath.postconnectscripts,
+        self.run_scripts(CFG.postconnectscripts,
                          extra_parameters=('wired', 'wired',
                                            self.network['profilename']))
         self.run_script_if_needed(self.after_script, 'post-connection',

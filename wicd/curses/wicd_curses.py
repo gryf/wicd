@@ -39,18 +39,20 @@ from optparse import OptionParser
 import signal
 import sys
 import warnings
+import os
 
 import urwid
 from dbus import DBusException
 # It took me a while to figure out that I have to use this.
 from gi.repository import GLib as gobject
 
-from wicd import wpath
+from wicd.config import CFG
 from wicd import misc
 from wicd import dbusmanager
 from wicd.translations import _
 
 # Curses UIs for other stuff
+import wicd.curses
 from wicd.curses.curses_misc import OptCols
 from wicd.curses.curses_misc import SelText
 from wicd.curses.curses_misc import NSelListBox
@@ -66,6 +68,7 @@ from wicd.curses import netentry_curses
 from wicd.curses.netentry_curses import WirelessSettingsDialog
 from wicd.curses.netentry_curses import WiredSettingsDialog
 
+
 # Stuff about getting the script configurer running
 # from grp import getgrgid
 # from os import getgroups, system
@@ -73,7 +76,7 @@ from wicd.curses.netentry_curses import WiredSettingsDialog
 # import logging
 # import logging.handler
 
-CURSES_REV = wpath.curses_revision
+CURSES_REV = wicd.curses.__version__
 
 # Fix strings in wicd-curses
 # from wicd.translations import language
@@ -298,7 +301,7 @@ def help_dialog(body):
 
 def run_configscript(parent, netname, nettype):
     """Run configuration script."""
-    configfile = wpath.etc + netname + '-settings.conf'
+    configfile = os.path.join(CFG.etc, netname + '-settings.conf')
     if nettype != 'wired':
         header = 'profile'
     else:
@@ -1291,7 +1294,7 @@ def main():
         if "DBus.Error.AccessDenied" in e.get_dbus_name():
             print(_('ERROR: wicd-curses was denied access to the wicd daemon: '
                     'please check that your user is in the "$A" group.')
-                  .replace('$A', '\033[1;34m' + wpath.wicd_group + '\033[0m'))
+                  .replace('$A', '\033[1;34m' + CFG.wicd_group + '\033[0m'))
             sys.exit(1)
         else:
             raise

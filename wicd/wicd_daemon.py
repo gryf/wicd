@@ -54,7 +54,8 @@ else:
     DBusGMainLoop(set_as_default=True)
 
 # wicd specific libraries
-from wicd import wpath
+import wicd
+from wicd.config import CFG
 from wicd import networking
 from wicd import misc
 from wicd import wnettools
@@ -62,14 +63,12 @@ from wicd.misc import noneToBlankString, _status_dict
 from wicd.logfile import ManagedStdio
 from wicd.configmanager import ConfigManager
 
-if __name__ == '__main__':
-    wpath.chdir(__file__)
 
 misc.RenameProcess("wicd")
 
-wireless_conf = os.path.join(wpath.etc, "wireless-settings.conf")
-wired_conf = os.path.join(wpath.etc, "wired-settings.conf")
-dhclient_conf = os.path.join(wpath.etc, "dhclient.conf.template")
+wireless_conf = os.path.join(CFG.etc, "wireless-settings.conf")
+wired_conf = os.path.join(CFG.etc, "wired-settings.conf")
+dhclient_conf = os.path.join(CFG.etc, "dhclient.conf.template")
 
 
 class WicdDaemon(dbus.service.Object, object):
@@ -85,7 +84,7 @@ class WicdDaemon(dbus.service.Object, object):
         """Initializes the daemon DBus object."""
         dbus.service.Object.__init__(self, bus_name=bus_name,
                                      object_path=object_path)
-        self.config = ConfigManager(os.path.join(wpath.etc,
+        self.config = ConfigManager(os.path.join(CFG.etc,
                                                  "manager-settings.conf"))
         self._debug_mode = bool(self.config.get("Settings", "debug_mode"))
         self.wifi = networking.Wireless(debug=self._debug_mode)
@@ -158,7 +157,7 @@ class WicdDaemon(dbus.service.Object, object):
         anything >= 0. This number is effective starting wicd v1.2.0.
 
         """
-        return wpath.version
+        return wicd.__version__
 
     @dbus.service.method('org.wicd.daemon')
     def SetWiredInterface(self, interface):
@@ -1720,7 +1719,7 @@ Arguments:
 \t-n\t--no-poll\tDon't monitor network status.
 \t-o\t--no-stdout\tDon't redirect stdout.
 \t-h\t--help\t\tPrint this help.
-""" % (wpath.version + ' (bzr-r%s)' % wpath.revision))
+""" % (wicd.__version__ + ' (git-r%s)' % CFG.revision))
 
 
 def daemonize():
@@ -1753,10 +1752,10 @@ def daemonize():
     try:
         pid = os.fork()
         if pid > 0:
-            dirname = os.path.dirname(wpath.pidfile)
+            dirname = os.path.dirname(CFG.pidfile)
             if not os.path.exists(dirname):
                 os.makedirs(dirname)
-            pidfile = open(wpath.pidfile, 'w')
+            pidfile = open(CFG.pidfile, 'w')
             pidfile.write(str(pid) + '\n')
             pidfile.close()
             sys.exit(0)
@@ -1799,7 +1798,7 @@ def run(argv):
     """
     # back up resolv.conf before we do anything else
     try:
-        backup_location = wpath.varlib + 'resolv.conf.orig'
+        backup_location = os.path.join(CFG.varlib, 'resolv.conf.orig')
         # Don't back up if the backup already exists, either as a regular file
         # or a symlink
         # The backup file should have been cleaned up by wicd, so perhaps it
@@ -1854,14 +1853,14 @@ def run(argv):
 
     if kill:
         try:
-            f = open(wpath.pidfile)
+            f = open(CFG.pidfile)
         except IOError:
             # print >> sys.stderr, "No wicd instance active, aborting."
             sys.exit(1)
 
         # restore resolv.conf on quit
         try:
-            backup_location = wpath.varlib + 'resolv.conf.orig'
+            backup_location = os.path.join(CFG.varlib, 'resolv.conf.orig')
             if os.path.islink(backup_location):
                 dest = os.readlink(backup_location)
                 os.remove('/etc/resolv.conf')
@@ -1884,33 +1883,33 @@ def run(argv):
         # quit, this should be the only option specified
         sys.exit(0)
 
-    if os.path.exists(wpath.pidfile):
+    if os.path.exists(CFG.pidfile):
         print('It seems like the daemon is already running.')
-        print('If it is not, please remove %s and try again.' % wpath.pidfile)
+        print('If it is not, please remove %s and try again.' % CFG.pidfile)
         sys.exit(1)
 
-    if not os.path.exists(wpath.networks):
-        os.makedirs(wpath.networks)
+    if not os.path.exists(CFG.networks):
+        os.makedirs(CFG.networks)
 
     if do_daemonize:
         daemonize()
 
     if redirect_stderr or redirect_stdout:
-        logpath = os.path.join(wpath.log, 'wicd.log')
-        if not os.path.exists(wpath.log):
-            os.makedirs(wpath.log)
-            os.chmod(wpath.log, 0o755)
+        logpath = os.path.join(CFG.log, 'wicd.log')
+        if not os.path.exists(CFG.log):
+            os.makedirs(CFG.log)
+            os.chmod(CFG.log, 0o755)
         output = ManagedStdio(logpath)
         if os.path.exists(logpath):
             try:
-                os.chmod(logpath, int(wpath.log_perms, 8))
+                os.chmod(logpath, int(CFG.log_perms, 8))
             except OSError:
-                print('unable to chmod log file to %s' % wpath.log_perms)
+                print('unable to chmod log file to %s' % CFG.log_perms)
 
             try:
-                if wpath.log_group:
+                if CFG.log_group:
                     import grp
-                    group = grp.getgrnam(wpath.log_group)
+                    group = grp.getgrnam(CFG.log_group)
                     os.chown(logpath, 0, group[2])
             except OSError:
                 print('unable to chown log file to %s' % group[2])
@@ -1924,7 +1923,7 @@ def run(argv):
     print('wicd initializing...')
     print('---------------------------')
 
-    print('wicd is version', wpath.version, wpath.revision)
+    print('wicd is version', wicd.__version__, CFG.revision)
 
     # Open the DBUS session
     bus = dbus.SystemBus()
@@ -1933,8 +1932,8 @@ def run(argv):
                         keep_connection=keep_connection)
     child_pid = None
     if not no_poll:
-        child_pid = Popen([wpath.python, "-O",
-                          os.path.join(wpath.daemon, "monitor.py")],
+        child_pid = Popen([CFG.python, "-O",
+                          os.path.join(CFG.daemon, "monitor.py")],
                           shell=False, close_fds=True).pid
     atexit.register(on_exit, child_pid)
 
@@ -1956,8 +1955,8 @@ def on_exit(child_pid):
         except OSError:
             pass
     print('Removing PID file...')
-    if os.path.exists(wpath.pidfile):
-        os.remove(wpath.pidfile)
+    if os.path.exists(CFG.pidfile):
+        os.remove(CFG.pidfile)
     print('Shutting down...')
     sys.exit(0)
 

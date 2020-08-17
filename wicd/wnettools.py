@@ -41,9 +41,10 @@ import shutil
 import socket
 import time
 
-from wicd import wpath
+from wicd.config import CFG
 from wicd import misc
 from wicd.misc import find_path
+
 
 # Regular expressions.
 _re_mode = (re.I | re.M | re.S)
@@ -342,7 +343,7 @@ class BaseInterface(object):
             return (client, cmd)
 
         # probably /var/lib/wicd/dhclient.conf with defaults
-        dhclient_conf_path = os.path.join(wpath.varlib, 'dhclient.conf')
+        dhclient_conf_path = os.path.join(CFG.varlib, 'dhclient.conf')
 
         client_dict = {
             "dhclient":
@@ -382,7 +383,7 @@ class BaseInterface(object):
                       'better')
 
                 dhclient_template = open(os.path.
-                                         join(wpath.etc,
+                                         join(CFG.etc,
                                               'dhclient.conf.template'), 'r')
                 output_conf = open(dhclient_conf_path, 'w')
 
@@ -394,7 +395,7 @@ class BaseInterface(object):
                 output_conf.close()
                 dhclient_template.close()
             else:
-                shutil.copy(os.path.join(wpath.etc,
+                shutil.copy(os.path.join(CFG.etc,
                                          'dhclient.conf.template'),
                             dhclient_conf_path)
 
@@ -1022,7 +1023,7 @@ class BaseWiredInterface(BaseInterface):
         """Authenticate with wpa_supplicant."""
         misc.ParseEncryption(network)
         cmd = ['wpa_supplicant', '-B', '-i', self.iface, '-c',
-               os.path.join(wpath.networks, 'wired'),
+               os.path.join(CFG.networks, 'wired'),
                '-Dwired']
         if self.verbose:
             print(cmd)
@@ -1316,7 +1317,7 @@ class BaseWirelessInterface(BaseInterface):
             else:
                 driver = '-D' + self.wpa_driver
             cmd = ['wpa_supplicant', '-B', '-i', self.iface, '-c',
-                   os.path.join(wpath.networks,
+                   os.path.join(CFG.networks,
                                 network['bssid'].replace(':', '').lower()),
                    driver]
             if self.verbose:
