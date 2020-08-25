@@ -23,6 +23,7 @@ import os
 import re
 import shutil
 import subprocess
+from distutils import log
 from distutils.command import build as _build
 
 import setuptools
@@ -181,11 +182,11 @@ class configure(setuptools.Command):
             self.ddistro = 'FAIL'
             # self.no_install_init = True
             # self.distro_detect_failed = True
-            print('WARNING: Unable to detect the distribution in use.\n'
-                  'If you have specified --distro or --init and --initfile, '
-                  'configure will continue.\nPlease report this warning, '
-                  'along with the name of your distribution, to the wicd '
-                  'developers.')
+            log.warn('WARNING: Unable to detect the distribution in use.\nIf '
+                     'you have specified --distro or --init and --initfile, '
+                     'configure will continue.\nPlease report this warning, '
+                     'along with the name of your distribution, to the wicd '
+                     'developers.')
 
         # Try to get the pm-utils sleep hooks directory from pkg-config.
         # Don't run these in a shell because it's not needed and because shell
@@ -215,7 +216,7 @@ class configure(setuptools.Command):
         self.logperms = '0600'
 
     def distro_check(self):
-        print("Distro is: " + self.distro)
+        log.info("Distro is: %s", self.distro)
 
         if self.distro is None and self.detected_distro != 'FAIL':
             self.distro = self.detected_distro
@@ -263,9 +264,9 @@ class configure(setuptools.Command):
         self.distro_check()
         if self.distro_detect_failed and not self.no_install_init and \
            'FAIL' in [self.init, self.initfile]:
-            print('ERROR: Failed to detect distro. Configure cannot '
-                  'continue.\nPlease specify --init and --initfile to '
-                  'continue with configuration.')
+            log.error('ERROR: Failed to detect distro. Configure cannot '
+                      'continue.\nPlease specify --init and --initfile to '
+                      'continue with configuration.')  # raise?
 
         # loop through the argument definitions in user_options
         for argument in self.user_options:
@@ -291,27 +292,26 @@ class configure(setuptools.Command):
             if argument[0].endswith('='):
                 cur_arg = argument[0][:-1]
                 cur_arg_value = getattr(self, cur_arg.replace('-', '_'))
-                print("%s is %s" % (cur_arg, cur_arg_value))
+                log.info("%s is %s", cur_arg, cur_arg_value)
                 values.append((cur_arg, getattr(self, cur_arg.replace('-',
                                                                       '_'))))
             else:
                 cur_arg = argument[0]
                 cur_arg_value = getattr(self, cur_arg.replace('-', '_'))
-                print("Found switch %s %s" % (argument, cur_arg_value))
+                log.info("Found switch %s %s", argument, cur_arg_value)
                 values.append((cur_arg, bool(cur_arg_value)))
 
-        print('Replacing values in template files...')
+        log.info('Replacing values in template files...')
         for item in os.listdir('in'):
             if item.endswith('.in'):
-                print('Replacing values in', item, end=' ')
                 original_name = os.path.join('in', item)
                 item_in = open(original_name, 'r')
                 final_name = item[:-3].replace('=', '/')
                 parent_dir = os.path.dirname(final_name)
                 if parent_dir and not os.path.exists(parent_dir):
-                    print('(mkdir %s)' % parent_dir, end=' ')
+                    log.info('(mkdir %s)', parent_dir)
                     os.makedirs(parent_dir)
-                print(final_name)
+                log.info('Replacing values in %s to %s', item, final_name)
                 item_out = open(final_name, 'w')
                 for line in item_in.readlines():
                     for item, value in values:
@@ -343,18 +343,16 @@ class clear_generated(setuptools.Command):
         pass
 
     def run(self):
-        print('Removing completed template files...')
+        log.info('Removing completed template files...')
         for item in os.listdir('in'):
             if item.endswith('.in'):
-                print('Removing completed', item, end=' ')
                 final_name = item[:-3].replace('=', '/')
-                print(final_name, '...', end=' ')
                 if os.path.exists(final_name):
                     os.remove(final_name)
-                    print('Removed.')
+                    log.info('Removing completed %s (%s)', final_name, item)
                 else:
-                    print('Does not exist.')
-        print('Removing compiled translation files...')
+                    log.info('%s Does not exist.', final_name)
+        log.info('Removing compiled translation files...')
         if os.path.exists('translations'):
             shutil.rmtree('translations/')
         os.makedirs('translations/')
@@ -447,16 +445,15 @@ class install(_install.install):
             data.append((wpath.suspend, ['other/50-wicd-suspend.sh']))
         if not wpath.no_install_pmutils:
             data.append((wpath.pmutils, ['other/55wicd']))
-        print('Using pid path', os.path.basename(wpath.pidfile))
+        log.info('Using pid path %s', os.path.basename(wpath.pidfile))
         if not wpath.no_install_i18n:
             print('Language support for', end=' ')
             for language in sorted(glob('translations/*')):
                 language = language.replace('translations/', '')
-                print(language, end=' ')
+                log.info('Language support for %s', language)
                 data.append((wpath.translations + language + '/LC_MESSAGES/',
                              ['translations/' + language +
                               '/LC_MESSAGES/wicd.mo']))
-        print()
 
         _install.install.run(self)
 
@@ -473,9 +470,9 @@ class test(setuptools.Command):
         pass
 
     def run(self):
-        print("importing tests")
+        log.info("importing tests")
         import tests
-        print('running tests')
+        log.info('running tests')
         tests.run_tests()
 
 
@@ -552,7 +549,7 @@ class compile_translations(setuptools.Command):
                     returncode = msgfmt.wait()
                     output = msgfmt.stderr.readline().strip().decode('utf-8')
                     if len(output) == 0 or returncode != 0:
-                        print(len(output), returncode)
+                        log.info("%s %s", len(output), returncode)
                         raise ValueError
                     else:
                         m = re.match(r'(\d+) translated messages(?:, (\d+) '
@@ -568,12 +565,12 @@ class compile_translations(setuptools.Command):
                             if completeness >= self.threshold:
                                 compile_po = True
                             else:
-                                print('Disabled %s (%s%% < %s%%).' %
-                                      (lang, completeness*100,
-                                       self.threshold*100))
+                                log.info('Disabled %s (%s%% < %s%%).',
+                                         lang, completeness*100,
+                                         self.threshold*100)
                                 continue
                 except (OSError, ValueError):
-                    print('ARGH')
+                    log.error('ARGH. Yeah, seriosuly.')
 
                 if compile_po:
                     os.makedirs('translations/' + lang + '/LC_MESSAGES/')
