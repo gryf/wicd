@@ -72,18 +72,9 @@ class configure(Command):
         ('share=', None, 'set the share directory'),
         ('etc=', None, 'set the etc directory'),
         ('scripts=', None, 'set the global scripts directory'),
-        ('pixmaps=', None, 'set the pixmaps directory'),
-        ('images=', None, 'set the image directory'),
         ('encryption=', None, 'set the encryption template directory'),
         ('bin=', None, 'set the bin directory'),
         ('sbin=', None, 'set the sbin directory'),
-        ('backends=', None, 'set the backend storage directory'),
-        ('daemon=', None, 'set the daemon directory'),
-        ('curses=', None, 'set the curses UI directory'),
-        ('gtk=', None, 'set the GTK UI directory'),
-        ('cli=', None, 'set the CLI directory'),
-        ('gnome-shell-extensions=', None, 'set the Gnome Shell Extensions '
-         'directory'),
         ('networks=', None, 'set the encryption configuration directory'),
         ('log=', None, 'set the log directory'),
         ('resume=', None, 'set the directory the resume from suspend script '
@@ -99,23 +90,12 @@ class configure(Command):
          'services config files are stored in'),
         ('logrotate=', None, 'set the directory where the logrotate '
          'configuration files are stored in'),
-        ('desktop=', None, 'set the directory the .desktop file is stored in'),
-        ('icons=', None, "set the base directory for the .desktop file's "
-         "icons"),
         ('translations=', None, 'set the directory translations are stored '
          'in'),
-        ('autostart=', None, 'set the directory that will be autostarted on '
-         'desktop login'),
         ('varlib=', None, 'set the path for wicd\'s variable state data'),
         ('init=', None, 'set the directory for the init file'),
         ('docdir=', None, 'set the directory for the documentation'),
         ('mandir=', None, 'set the directory for the man pages'),
-        ('kdedir=', None, 'set the kde autostart directory'),
-
-        # Anything after this is a FILE; in other words, a slash ("/") will
-        # not automatically be added to the end of the path.
-        # Do NOT remove the python= entry, as it signals the beginning of
-        # the file section.
         ('python=', None, 'set the path to the Python executable'),
         ('pidfile=', None, 'set the pid file'),
         ('initfile=', None, 'set the init file to use'),
@@ -125,26 +105,16 @@ class configure(Command):
          'installed'),
         ('loggroup=', None, 'the group the log file belongs to'),
         ('logperms=', None, 'the log file permissions'),
-
-        # Configure switches
         ('no-install-init', None, "do not install the init file"),
         ('no-install-man', None, 'do not install the man files'),
         ('no-install-i18n', None, 'do not install translation files'),
         ('no-install-i18n-man', None, 'do not install the translated man '
          'files'),
-        ('no-install-kde', None, 'do not install the kde autostart file'),
         ('no-install-acpi', None, 'do not install the suspend.d and resume.d '
          'acpi scripts'),
         ('no-install-pmutils', None, 'do not install the pm-utils hooks'),
         ('no-install-docs', None, 'do not install the auxiliary '
-         'documentation'),
-        ('no-install-ncurses', None, 'do not install the ncurses client'),
-        ('no-install-cli', None, 'do not install the command line executable'),
-        ('no-install-gtk', None, 'do not install the gtk client'),
-        ('no-install-gnome-shell-extensions', None, 'do not install the Gnome '
-         'Shell extension'),
-        ('no-use-notifications', None, 'do not ever allow the use of '
-         'libnotify notifications')]
+         'documentation')]
 
     def initialize_options(self):
         self.lib = '/usr/lib/wicd/'
@@ -154,15 +124,6 @@ class configure(Command):
         self.encryption = self.etc + 'encryption/templates/'
         self.bin = '/usr/bin/'
         self.sbin = '/usr/sbin/'
-        self.daemon = self.share + 'daemon'
-        self.backends = self.share + 'backends'
-        self.curses = self.share + 'curses'
-        self.gtk = self.share + 'gtk'
-        self.cli = self.share + 'cli'
-        self.gnome_shell_extensions = '/usr/share/gnome-shell/extensions/'
-        self.icons = '/usr/share/icons/hicolor/'
-        self.pixmaps = '/usr/share/pixmaps/'
-        self.images = self.share + 'icons'
         self.varlib = '/var/lib/wicd/'
         self.networks = self.varlib + 'configurations/'
         self.log = '/var/log/wicd/'
@@ -173,27 +134,18 @@ class configure(Command):
         self.dbus_service = '/usr/share/dbus-1/system-services/'
         self.systemd = '/lib/systemd/system/'
         self.logrotate = '/etc/logrotate.d/'
-        self.desktop = '/usr/share/applications/'
         self.translations = '/usr/share/locale/'
-        self.autostart = '/etc/xdg/autostart/'
         self.docdir = '/usr/share/doc/wicd/'
         self.mandir = '/usr/share/man/'
-        self.kdedir = '/usr/share/autostart/'
         self.distro = 'auto'
 
         self.no_install_init = False
         self.no_install_man = False
         self.no_install_i18n = False
         self.no_install_i18n_man = False
-        self.no_install_kde = False
         self.no_install_acpi = False
         self.no_install_pmutils = False
         self.no_install_docs = False
-        self.no_install_gtk = False
-        self.no_install_ncurses = False
-        self.no_install_cli = False
-        self.no_install_gnome_shell_extensions = False
-        self.no_use_notifications = False
 
         # Determine the default init file location on several different distros
         self.distro_detect_failed = False
@@ -232,10 +184,9 @@ class configure(Command):
                   'along with the name of your distribution, to the wicd '
                   'developers.')
 
-        # Try to get the pm-utils sleep hooks directory from pkg-config and
-        # the kde prefix from kde-config
+        # Try to get the pm-utils sleep hooks directory from pkg-config.
         # Don't run these in a shell because it's not needed and because shell
-        # swallows the OSError we would get if {pkg,kde}-config do not exist
+        # swallows the OSError we would get if pkg-config do not exist
         # If we don't get anything from *-config, or it didn't run properly,
         # or the path is not a proper absolute path, raise an error
         try:
@@ -252,41 +203,6 @@ class configure(Command):
                 self.pmutils = pmutils_candidate
         except (OSError, ValueError, FileNotFoundError):
             pass  # use our default
-
-        try:
-            kdetemp = subprocess.Popen(["kde-config", "--prefix"],
-                                       stdout=subprocess.PIPE)
-            # let it finish, and get the exit code
-            returncode = kdetemp.wait()
-            # read stdout
-            kdedir_candidate = str(kdetemp.stdout.readline().strip())
-            if (len(kdedir_candidate) == 0 or
-                    returncode != 0 or
-                    not os.path.isabs(kdedir_candidate)):
-                raise ValueError
-            else:
-                self.kdedir = kdedir_candidate + '/share/autostart'
-        except (OSError, ValueError, FileNotFoundError):
-            # If kde-config isn't present, we'll check for kde-4.x
-            try:
-                kde4temp = subprocess.Popen(["kde4-config", "--prefix"],
-                                            stdout=subprocess.PIPE)
-                # let it finish, and get the exit code
-                returncode = kde4temp.wait()
-                # read stdout
-                kde4dir_candidate = str(kde4temp.stdout.readline().strip())
-                if len(kde4dir_candidate) == 0 or returncode != 0 or \
-                   not os.path.isabs(kde4dir_candidate):
-                    raise ValueError
-                else:
-                    self.kdedir = kde4dir_candidate + '/share/autostart'
-            except (OSError, ValueError, FileNotFoundError):
-                # If neither kde-config nor kde4-config are not present or
-                # return an error, then we can assume that kde isn't installed
-                # on the user's system
-                self.no_install_kde = True
-                # If the assumption above turns out to be wrong, do this:
-                # pass # use our default
 
         self.python = '/usr/bin/python3'
         self.pidfile = '/var/run/wicd/wicd.pid'
