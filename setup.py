@@ -26,11 +26,17 @@ from distutils.core import setup, Command
 from distutils.command.build import build as _build
 from distutils.command.install import install as _install
 
-# Be sure to keep this updated!
-# VERSIONNUMBER
-VERSION_NUM = '1.7.4'
+import wicd
+
+VERSION_NUM = wicd.__version__
 # REVISION_NUM is automatically updated
-REVISION_NUM = 'unknown'
+try:
+    REVISION_NUM = subprocess.check_output('git rev-parse --short HEAD'
+                                           .split(), text=True)
+    if 'fatal' in REVISION_NUM:
+        REVISION_NUM = 'unknown'
+except IOError:
+    REVISION_NUM = 'unknown'
 CURSES_REVNO = 'uimod'
 
 data = []
@@ -41,19 +47,6 @@ empty_file = 'other/.empty_on_purpose'
 
 # change to the directory setup.py is contained in
 os.chdir(os.path.abspath(os.path.split(__file__)[0]))
-
-try:
-    if os.path.exists('.bzr') and os.system('bzr > /dev/null 2>&1') == 0:
-        try:
-            os.system('bzr version-info --python > vcsinfo.py && 2to3-2.7 '
-                      '-w vcsinfo.py')
-        except Exception:
-            pass
-    import vcsinfo
-    REVISION_NUM = vcsinfo.version_info['revno']
-except Exception as e:
-    print('failed to find revision number:')
-    print(e)
 
 
 class build(_build):
