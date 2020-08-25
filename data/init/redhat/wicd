@@ -9,9 +9,9 @@
 . /etc/rc.d/init.d/functions
 
 
-WICD_BIN=%SBIN%wicd
+WICD_BIN=/usr/sbin/wicd
 
-pidfile=%PIDFILE%
+pidfile=/var/run/wicd/wicd.pid
 servicename=wicd
 processname=wicd
 start()

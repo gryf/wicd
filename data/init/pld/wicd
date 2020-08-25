@@ -8,7 +8,7 @@
 #
 # processname:	wicd
 # config:
-# pidfile: %PIDFILE%
+# pidfile: /var/run/wicd/wicd.pid
 #
 # $Id: template.init 9689 2008-03-27 16:15:39Z patrys $
 
@@ -19,7 +19,7 @@
 # Get service config - may override defaults
 # [ -f /etc/sysconfig/wicd ] && . /etc/sysconfig/wicd
 
-WICD_BIN=%SBIN%wicd
+WICD_BIN=/usr/sbin/wicd
 
 start() {
 	# Check if the service is already running?

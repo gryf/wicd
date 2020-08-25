@@ -304,16 +304,20 @@ class configure(Command):
 
     def distro_check(self):
         print("Distro is: " + self.distro)
+
+        if self.distro is None and self.detected_distro != 'FAIL':
+            self.distro = self.detected_distro
+
         if self.distro in ['sles', 'suse']:
             self.init = '/etc/init.d/'
-            self.initfile = 'init/suse/wicd'
+            self.initfile = 'data/init/suse/wicd'
         elif self.distro in ['redhat', 'centos', 'fedora']:
             self.init = '/etc/rc.d/init.d/'
-            self.initfile = 'init/redhat/wicd'
+            self.initfile = 'data/init/redhat/wicd'
             self.pidfile = '/var/run/wicd.pid'
         elif self.distro in ['slackware', 'slamd64', 'bluewhite64']:
             self.init = '/etc/rc.d/'
-            self.initfile = 'init/slackware/rc.wicd'
+            self.initfile = 'data/init/slackware/rc.wicd'
             self.docdir = '/usr/doc/wicd-%s' % VERSION_NUM
             self.mandir = '/usr/man/'
             self.no_install_acpi = True
@@ -323,31 +327,25 @@ class configure(Command):
             self.loggroup = "adm"
             self.logperms = "0640"
             self.init = '/etc/init.d/'
-            self.initfile = 'init/debian/wicd'
+            self.initfile = 'data/init/debian/wicd'
         elif self.distro in ['arch']:
             self.init = '/etc/rc.d/'
-            self.initfile = 'init/arch/wicd'
+            self.initfile = 'data/init/arch/wicd'
         elif self.distro in ['gentoo']:
             self.init = '/etc/init.d/'
-            self.initfile = 'init/gentoo/wicd'
+            self.initfile = 'data/init/gentoo/wicd'
         elif self.distro in ['pld']:
             self.init = '/etc/rc.d/init.d/'
-            self.initfile = 'init/pld/wicd'
+            self.initfile = 'data/init/pld/wicd'
         elif self.distro in ['crux']:
             self.init = '/etc/rc.d/'
         elif self.distro in ['lunar']:
             self.init = '/etc/init.d/'
-            self.initfile = 'init/lunar/wicd'
+            self.initfile = 'data/init/lunar/wicd'
         else:
-            if self.distro == 'auto':
-                print("NOTICE: Automatic distro detection found: %s, retrying "
-                      "with that..." % self.ddistro)
-                self.distro = self.ddistro
-                self.distro_check()
-            else:
-                print("WARNING: Distro detection failed!")
-                self.no_install_init = True
-                self.distro_detect_failed = True
+            log.warn("WARNING: Distro detection failed!")
+            self.no_install_init = True
+            self.distro_detect_failed = True
 
     def finalize_options(self):
         self.distro_check()

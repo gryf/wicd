@@ -9,7 +9,7 @@
 # Description: wicd, a wired and wireless connection manager.
 ### END INIT INFO
 
-WICD_BIN=%SBIN%wicd
+WICD_BIN=/usr/sbin/wicd
 test -x $WICD_BIN || exit 5
 
 . /etc/rc.status

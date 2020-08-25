@@ -5,7 +5,7 @@
 . /etc/rc.conf
 . /etc/rc.d/functions
 
-WICD_BIN="%SBIN%wicd"
+WICD_BIN="/usr/sbin/wicd"
 
 if [ -f /var/run/wicd/wicd.pid ]; then 
 	PID="$(cat /var/run/wicd/wicd.pid)"
