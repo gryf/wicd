@@ -43,6 +43,19 @@ except IOError:
     REVISION_NUM = 'unknown'
 CURSES_REVNO = 'uimod'
 
+DISTROS = {'/etc/redhat-release': 'redhat',
+           '/etc/SuSE-release': 'suse',
+           '/etc/fedora-release': 'redhat',
+           '/etc/gentoo-release': 'gentoo',
+           '/etc/debian_version': 'debian',
+           '/etc/arch-release': 'arch',
+           '/etc/slackware-version': 'slackware',
+           '/etc/slamd64-version': 'slackware',
+           '/etc/bluewhite64-version': 'slackware',
+           '/etc/pld-release': 'pld',
+           '/usr/bin/crux': 'crux',
+           '/etc/lunar.release': 'lunar'}
+
 data = []
 
 # path to the file to put in empty directories
@@ -70,8 +83,6 @@ class configure(setuptools.Command):
     description = "configure the paths that Wicd will be installed to"
 
     user_options = [
-        # The first bunch is DIRECTORIES - they need to end with a slash ("/"),
-        # which will automatically be tacked on in the finalize_options method
         ('lib=', None, 'set the lib directory'),
         ('share=', None, 'set the share directory'),
         ('etc=', None, 'set the etc directory'),
@@ -154,34 +165,13 @@ class configure(setuptools.Command):
         # Determine the default init file location on several different distros
         self.distro_detect_failed = False
 
-        self.initfile = 'init/default/wicd'
-        # ddistro is the detected distro
-        if os.path.exists('/etc/redhat-release'):
-            self.ddistro = 'redhat'
-        elif os.path.exists('/etc/SuSE-release'):
-            self.ddistro = 'suse'
-        elif os.path.exists('/etc/fedora-release'):
-            self.ddistro = 'redhat'
-        elif os.path.exists('/etc/gentoo-release'):
-            self.ddistro = 'gentoo'
-        elif os.path.exists('/etc/debian_version'):
-            self.ddistro = 'debian'
-        elif os.path.exists('/etc/arch-release'):
-            self.ddistro = 'arch'
-        elif (os.path.exists('/etc/slackware-version') or
-              os.path.exists('/etc/slamd64-version') or
-              os.path.exists('/etc/bluewhite64-version')):
-            self.ddistro = 'slackware'
-        elif os.path.exists('/etc/pld-release'):
-            self.ddistro = 'pld'
-        elif os.path.exists('/usr/bin/crux'):
-            self.ddistro = 'crux'
-        elif os.path.exists('/etc/lunar.release'):
-            self.distro = 'lunar'
-        else:
-            self.ddistro = 'FAIL'
-            # self.no_install_init = True
-            # self.distro_detect_failed = True
+        self.detected_distro = 'FAIL'
+        for fname, distro in DISTROS.items():
+            if os.path.exists(fname):
+                self.detected_distro = distro
+                break
+
+        if self.detected_distro == 'FAIL':
             log.warn('WARNING: Unable to detect the distribution in use.\nIf '
                      'you have specified --distro or --init and --initfile, '
                      'configure will continue.\nPlease report this warning, '
