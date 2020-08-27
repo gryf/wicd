@@ -20,7 +20,9 @@
 #
 from glob import glob
 import os
+import json
 import re
+import configparser
 import shutil
 import subprocess
 from distutils import log
@@ -30,6 +32,8 @@ import setuptools
 from setuptools.command import install as _install
 
 import wicd
+from wicd import config
+from wicd.config import DEFAULTS as RUNTIME_OPTS
 
 
 VERSION_NUM = wicd.__version__
@@ -65,17 +69,37 @@ empty_file = 'other/.empty_on_purpose'
 # change to the directory setup.py is contained in
 os.chdir(os.path.abspath(os.path.split(__file__)[0]))
 
+BUILD_OPTS = {'bin': '/usr/bin/',
+              'dbus': '/etc/dbus-1/system.d/',
+              'dbus_service': '/usr/share/dbus-1/system-services/',
+              'distro': None,
+              'docdir': '/usr/share/doc/wicd/',
+              'logrotate': '/etc/logrotate.d/',
+              'mandir': '/usr/share/man/',
+              'scripts': '/etc/wicd/scripts/',
+              'systemd': '/lib/systemd/system/',
+              'resume': '/etc/acpi/resume.d/',
+              'suspend': '/etc/acpi/suspend.d/',
+              'pmutils': '/usr/lib/pm-utils/sleep.d/',
+              'no_install_init': False,
+              'no_install_man': False,
+              'no_install_i18n': False,
+              'no_install_i18n_man': False,
+              'no_install_acpi': False,
+              'no_install_pmutils': False,
+              'no_install_docs': False,
+              'distro_detect_failed': False,
+              'init': '',
+              'initfile': '',
+              'initfilename': ''}
+
 
 class build(_build.build):
     sub_commands = _build.build.sub_commands + [('compile_translations', None)]
 
     def run(self):
-        try:
-            import wpath
-        except ImportError:
+        if not os.path.exists('wpath.json'):
             self.run_command('configure')
-            import wpath
-            # raise Exception, 'Please run "./setup.py configure" first.'
         _build.build.run(self)
 
 
@@ -83,10 +107,6 @@ class configure(setuptools.Command):
     description = "configure the paths that Wicd will be installed to"
 
     user_options = [
-        ('lib=', None, 'set the lib directory'),
-        ('share=', None, 'set the share directory'),
-        ('etc=', None, 'set the etc directory'),
-        ('scripts=', None, 'set the global scripts directory'),
         ('encryption=', None, 'set the encryption template directory'),
         ('bin=', None, 'set the bin directory'),
         ('sbin=', None, 'set the sbin directory'),
@@ -132,38 +152,10 @@ class configure(setuptools.Command):
          'documentation')]
 
     def initialize_options(self):
-        self.lib = '/usr/lib/wicd/'
-        self.share = '/usr/share/wicd/'
-        self.etc = '/etc/wicd/'
-        self.scripts = self.etc + "scripts/"
-        self.encryption = self.etc + 'encryption/templates/'
-        self.bin = '/usr/bin/'
-        self.sbin = '/usr/sbin/'
-        self.varlib = '/var/lib/wicd/'
-        self.networks = self.varlib + 'configurations/'
-        self.log = '/var/log/wicd/'
-        self.resume = '/etc/acpi/resume.d/'
-        self.suspend = '/etc/acpi/suspend.d/'
-        self.pmutils = '/usr/lib/pm-utils/sleep.d/'
-        self.dbus = '/etc/dbus-1/system.d/'
-        self.dbus_service = '/usr/share/dbus-1/system-services/'
-        self.systemd = '/lib/systemd/system/'
-        self.logrotate = '/etc/logrotate.d/'
-        self.translations = '/usr/share/locale/'
-        self.docdir = '/usr/share/doc/wicd/'
-        self.mandir = '/usr/share/man/'
-        self.distro = 'auto'
-
-        self.no_install_init = False
-        self.no_install_man = False
-        self.no_install_i18n = False
-        self.no_install_i18n_man = False
-        self.no_install_acpi = False
-        self.no_install_pmutils = False
-        self.no_install_docs = False
-
-        # Determine the default init file location on several different distros
-        self.distro_detect_failed = False
+        for key, val in BUILD_OPTS.items():
+            setattr(self, key, val)
+        for key, val in RUNTIME_OPTS.items():
+            setattr(self, key, val)
 
         self.detected_distro = 'FAIL'
         for fname, distro in DISTROS.items():
@@ -252,29 +244,11 @@ class configure(setuptools.Command):
 
     def finalize_options(self):
         self.distro_check()
-        if self.distro_detect_failed and not self.no_install_init and \
-           'FAIL' in [self.init, self.initfile]:
+        if (self.distro_detect_failed and not self.no_install_init and
+                'FAIL' in [self.init, self.initfile]):
             log.error('ERROR: Failed to detect distro. Configure cannot '
                       'continue.\nPlease specify --init and --initfile to '
                       'continue with configuration.')  # raise?
-
-        # loop through the argument definitions in user_options
-        for argument in self.user_options:
-            # argument name is the first item in the user_options list
-            # sans the = sign at the end
-            argument_name = argument[0][:-1]
-            # select the first one, which is the name of the option
-            value = getattr(self, argument_name.replace('-', '_'))
-            # if the option is not python (which is not a directory)
-            if not argument[0][:-1] == "python":
-                # see if it ends with a /
-                if not str(value).endswith("/"):
-                    # if it doesn't, slap one on
-                    setattr(self, argument_name, str(value) + "/")
-            else:
-                # as stated above, the python entry defines the beginning
-                # of the files section
-                return
 
     def run(self):
         values = list()
@@ -310,15 +284,44 @@ class configure(setuptools.Command):
                                             str(value))
 
                     # other things to replace that aren't arguments
-                    line = line.replace('%VERSION%', str(VERSION_NUM))
-                    line = line.replace('%REVNO%', str(REVISION_NUM))
-                    line = line.replace('%CURSES_REVNO%', str(CURSES_REVNO))
+                    line = line.replace('%VERSION%', VERSION_NUM)
+                    line = line.replace('%REVNO%', REVISION_NUM)
+                    line = line.replace('%CURSES_REVNO%', CURSES_REVNO)
 
                     item_out.write(line)
 
                 item_out.close()
                 item_in.close()
                 shutil.copymode(original_name, final_name)
+
+        # create wpath.json and changed options for wicd.conf
+        opts = {}
+        for key in BUILD_OPTS:
+            opts[key] = getattr(self, key)
+
+        conf = {}
+        for key, val in RUNTIME_OPTS.items():
+            opts[key] = getattr(self, key)
+            if opts[key] != val:
+                conf[key] = opts[key]
+
+        with open('wpath.json', 'w') as fobj:
+            json.dump(opts, fobj)
+
+        # write changed paths used in runtime as the config file.
+        if conf:
+            parser = configparser.ConfigParser()
+            parser.add_section('wicd')
+            for key, val in conf.items():
+                parser.set('wicd', key, str(val))
+
+            with open('data/etc/wicd.conf', 'w') as fobj:
+                parser.write(fobj)
+        else:
+            try:
+                os.unlink('data/etc/wicd.conf')
+            except FileNotFoundError:
+                pass
 
 
 class clear_generated(setuptools.Command):
@@ -351,12 +354,14 @@ class clear_generated(setuptools.Command):
 class install(_install.install):
     def run(self):
         try:
-            import wpath
-        except ImportError:
+            with open('wpath.json') as fobj:
+                wpath = config.Config(json.load(fobj))
+        except FileNotFoundError:
             self.run_command('build')
-            import wpath
+            with open('wpath.json') as fobj:
+                wpath = config.Config(json.load(fobj))
 
-        print("Using init file", wpath.init, wpath.initfile)
+
         data.extend([
             (wpath.dbus, ['other/wicd.conf']),
             (wpath.dbus_service, ['other/org.wicd.daemon.service']),
@@ -445,6 +450,11 @@ class install(_install.install):
                              ['translations/' + language +
                               '/LC_MESSAGES/wicd.mo']))
 
+        for dir_ in (os.listdir('data')):
+            path = os.path.join('data', dir_)
+            for fname in os.listdir(path):
+                data.append((wpath[dir_], [os.path.join(path, fname)]))
+
         _install.install.run(self)
 
 
@@ -514,11 +524,12 @@ class compile_translations(setuptools.Command):
 
     def run(self):
         try:
-            import wpath
-        except ImportError:
-            # if there's no wpath.py, then run configure+build
+            with open('wpath.json') as fobj:
+                wpath = config.Config(json.load(fobj))
+        except FileNotFoundError:
             self.run_command('build')
-            import wpath
+            with open('wpath.json') as fobj:
+                wpath = config.Config(json.load(fobj))
 
         if not wpath.no_install_i18n:
             if os.path.exists('translations'):
