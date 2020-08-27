@@ -192,13 +192,6 @@ class configure(setuptools.Command):
         except (OSError, ValueError, FileNotFoundError):
             pass  # use our default
 
-        self.python = '/usr/bin/python3'
-        self.pidfile = '/var/run/wicd/wicd.pid'
-        self.initfilename = os.path.basename(self.initfile)
-        self.wicdgroup = 'users'
-        self.loggroup = ''
-        self.logperms = '0600'
-
     def distro_check(self):
         log.info("Distro is: %s", self.distro)
 
@@ -385,60 +378,22 @@ class install(_install.install):
             with open('wpath.json') as fobj:
                 wpath = config.Config(json.load(fobj))
 
+        data.extend([(wpath.log, [empty_file]),
+                     (wpath.networks, [empty_file]),
+                     (wpath.scripts, [empty_file]),
+                     (wpath.predisconnectscripts, [empty_file]),
+                     (wpath.postdisconnectscripts, [empty_file]),
+                     (wpath.preconnectscripts, [empty_file]),
+                     (wpath.postconnectscripts, [empty_file])])
 
-        data.extend([
-            (wpath.dbus, ['other/wicd.conf']),
-            (wpath.dbus_service, ['other/org.wicd.daemon.service']),
-            (wpath.systemd, ['other/wicd.service']),
-            (wpath.logrotate, ['other/wicd.logrotate']),
-            (wpath.log, [empty_file]),
-            (wpath.etc, ['other/dhclient.conf.template.default']),
-            (wpath.encryption, [('encryption/templates/' + b) for b in
-                                os.listdir('encryption/templates')
-                                if not b.startswith('.')]),
-            (wpath.networks, [empty_file]),
-            (wpath.sbin,  ['scripts/wicd']),
-            (wpath.daemon, ['wicd/monitor.py', 'wicd/wicd-daemon.py',
-                            'wicd/suspend.py', 'wicd/autoconnect.py']),
-            (wpath.backends, ['wicd/backends/be-external.py',
-                              'wicd/backends/be-ioctl.py']),
-            (wpath.scripts, [empty_file]),
-            (wpath.predisconnectscripts, [empty_file]),
-            (wpath.postdisconnectscripts, [empty_file]),
-            (wpath.preconnectscripts, [empty_file]),
-            (wpath.postconnectscripts, [empty_file])
-        ])
-
-        if not wpath.no_install_ncurses:
-            data.append((wpath.curses, ['curses/curses_misc.py']))
-            data.append((wpath.curses, ['curses/prefs_curses.py']))
-            data.append((wpath.curses, ['curses/wicd-curses.py']))
-            data.append((wpath.curses, ['curses/netentry_curses.py']))
-            data.append((wpath.curses, ['curses/configscript_curses.py']))
-            data.append((wpath.bin, ['scripts/wicd-curses']))
-            if not wpath.no_install_man:
-                data.append((wpath.mandir + 'man8/', ['man/wicd-curses.8']))
-            if not wpath.no_install_man and not wpath.no_install_i18n_man:
-                data.append((wpath.mandir + 'nl/man8/',
-                             ['man/nl/wicd-curses.8']))
-            if not wpath.no_install_docs:
-                data.append((wpath.docdir, ['curses/README.curses']))
-        if not wpath.no_install_cli:
-            data.append((wpath.cli, ['cli/wicd-cli.py']))
-            data.append((wpath.bin, ['scripts/wicd-cli']))
-            if not wpath.no_install_man:
-                data.append((wpath.mandir + 'man8/', ['man/wicd-cli.8']))
-            if not wpath.no_install_docs:
-                data.append((wpath.docdir, ['cli/README.cli']))
-        piddir = os.path.dirname(wpath.pidfile)
-        if not piddir.endswith('/'):
-            piddir += '/'
         if not wpath.no_install_docs:
-            data.append((wpath.docdir, ['INSTALL', 'LICENSE', 'AUTHORS',
-                                        'README', 'CHANGES', ]))
-            data.append((wpath.varlib, ['other/WHEREAREMYFILES']))
+            data.append((wpath.docdir, ['AUTHORS', 'CHANGES', 'INSTALL',
+                                        'LICENSE', 'README.cli',
+                                        'README.curses', 'README.old',
+                                        'README.rst']))
         if not wpath.no_install_init:
             data.append((wpath.init, [wpath.initfile]))
+
         if not wpath.no_install_man:
             data.append((wpath.mandir + 'man8/', ['man/wicd.8']))
             data.append((wpath.mandir + 'man5/',
@@ -447,32 +402,38 @@ class install(_install.install):
                          ['man/wicd-wired-settings.conf.5']))
             data.append((wpath.mandir + 'man5/',
                          ['man/wicd-wireless-settings.conf.5']))
-            data.append((wpath.mandir + 'man1/', ['man/wicd-client.1']))
-        if not wpath.no_install_man and not wpath.no_install_i18n_man:
-            # Dutch translations of the man
-            data.append((wpath.mandir + 'nl/man8/', ['man/nl/wicd.8']))
-            data.append((wpath.mandir + 'nl/man5/',
-                         ['man/nl/wicd-manager-settings.conf.5']))
-            data.append((wpath.mandir + 'nl/man5/',
-                         ['man/nl/wicd-wired-settings.conf.5']))
-            data.append((wpath.mandir + 'nl/man5/',
-                         ['man/nl/wicd-wireless-settings.conf.5']))
-            data.append((wpath.mandir + 'nl/man1/',
-                         ['man/nl/wicd-client.1']))
+            data.append((wpath.mandir + 'man8/', ['man/wicd-curses.8']))
+            data.append((wpath.mandir + 'man8/', ['man/wicd-cli.8']))
+
+            if not wpath['no_install_i18n_man']:
+                # Dutch translations of the man
+                data.append((wpath.mandir + 'nl/man8/', ['man/nl/wicd.8']))
+                data.append((wpath.mandir + 'nl/man5/',
+                             ['man/nl/wicd-manager-settings.conf.5']))
+                data.append((wpath.mandir + 'nl/man5/',
+                             ['man/nl/wicd-wired-settings.conf.5']))
+                data.append((wpath.mandir + 'nl/man5/',
+                             ['man/nl/wicd-wireless-settings.conf.5']))
+                data.append((wpath.mandir + 'nl/man8/',
+                             ['man/nl/wicd-curses.8']))
+
+        # TODO(gryf): sort out paths for pmutils/acpi
         if not wpath.no_install_acpi:
             data.append((wpath.resume, ['other/80-wicd-connect.sh']))
             data.append((wpath.suspend, ['other/50-wicd-suspend.sh']))
         if not wpath.no_install_pmutils:
             data.append((wpath.pmutils, ['other/55wicd']))
+
         log.info('Using pid path %s', os.path.basename(wpath.pidfile))
+
         if not wpath.no_install_i18n:
-            print('Language support for', end=' ')
             for language in sorted(glob('translations/*')):
                 language = language.replace('translations/', '')
                 log.info('Language support for %s', language)
-                data.append((wpath.translations + language + '/LC_MESSAGES/',
-                             ['translations/' + language +
-                              '/LC_MESSAGES/wicd.mo']))
+                data.append((os.path.join(wpath.translations, language,
+                                          '/LC_MESSAGES/'),
+                             [os.path.join('translations/', language,
+                                           'LC_MESSAGES', 'wicd.mo')]))
 
         for dir_ in (os.listdir('data')):
             path = os.path.join('data', dir_)

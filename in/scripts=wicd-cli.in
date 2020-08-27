@@ -1,2 +1,0 @@
-#!/bin/bash
-exec %PYTHON% -O %SHARE%cli/wicd-cli.py $@
