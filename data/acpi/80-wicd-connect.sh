@@ -1,4 +1,4 @@
 #!/bin/sh
 # Bring wifi network interface back up.
 
-%DAEMON%autoconnect.py
+wicd-autoconnect.py

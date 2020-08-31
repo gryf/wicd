@@ -51,7 +51,7 @@ def error_handler(*args):
     sys.exit(3)
 
 
-if __name__ == '__main__':
+def main():
     try:
         time.sleep(2)
         daemon.SetSuspend(False)
@@ -62,3 +62,7 @@ if __name__ == '__main__':
         print("Exception caught: %s" % str(e), file=sys.stderr)
         print('Error autoconnecting.', file=sys.stderr)
         sys.exit(2)
+
+
+if __name__ == '__main__':
+    main()

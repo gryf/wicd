@@ -400,10 +400,10 @@ class install(_install.install):
 
         # TODO(gryf): sort out paths for pmutils/acpi
         if not wpath.no_install_acpi:
-            data.append((wpath.resume, ['other/80-wicd-connect.sh']))
-            data.append((wpath.suspend, ['other/50-wicd-suspend.sh']))
+            data.append((wpath.resume, ['data/acpi/80-wicd-connect.sh']))
+            data.append((wpath.suspend, ['data/acpi/50-wicd-suspend.sh']))
         if not wpath.no_install_pmutils:
-            data.append((wpath.pmutils, ['other/55wicd']))
+            data.append((wpath.pmutils, ['data/pmutils/55wicd']))
 
         log.info('Using pid path %s', os.path.basename(wpath.pidfile))
 
@@ -416,7 +416,7 @@ class install(_install.install):
                                            'LC_MESSAGES', 'wicd.mo')]))
 
         for dir_ in (os.listdir('data')):
-            if dir_ == 'init':
+            if dir_ in ('init', 'acpi', 'pmutils'):
                 continue
             path = os.path.join('data', dir_)
             for fname in os.listdir(path):

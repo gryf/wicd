@@ -38,7 +38,7 @@ except Exception as e:
     sys.exit(1)
 
 
-if __name__ == '__main__':
+def main():
     try:
         daemon.Disconnect()
         daemon.SetForcedDisconnect(False)
@@ -47,3 +47,7 @@ if __name__ == '__main__':
         print("Exception caught: %s" % str(e), file=sys.stderr)
         print('Error setting suspend.', file=sys.stderr)
         sys.exit(2)
+
+
+if __name__ == '__main__':
+    main()
