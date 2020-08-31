@@ -2,7 +2,7 @@
 # Copyright 1999-2020 Gentoo Foundation
 # Distributed under the terms of the GNU General Public License v2
 
-WICD_DAEMON=/usr/sbin/wicd
+WICD_DAEMON=/usr/bin/wicd
 WICD_PIDFILE=/run/wicd/wicd.pid
 
 depend() {

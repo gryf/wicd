@@ -19,7 +19,7 @@
 # Get service config - may override defaults
 # [ -f /etc/sysconfig/wicd ] && . /etc/sysconfig/wicd
 
-WICD_BIN=/usr/sbin/wicd
+WICD_BIN=/usr/bin/wicd
 
 start() {
 	# Check if the service is already running?

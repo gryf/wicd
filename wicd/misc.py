@@ -212,7 +212,7 @@ def IsValidIPv6(ip):
 
 def PromptToStartDaemon():
     """Prompt the user to start the daemon"""
-    daemonloc = os.path.join(CFG.sbin, 'wicd')
+    daemonloc = os.path.join(CFG.bin, 'wicd')
     sudo_prog = choose_sudo_prog()
     if not sudo_prog:
         return False

@@ -2,24 +2,24 @@ import configparser
 import os
 
 
-DEFAULTS = {'daemon': '/usr/share/wicd/daemon',
+DEFAULTS = {'bin': '/usr/bin',
+            'daemon': '/usr/share/wicd/daemon',
             'encryption': '/etc/wicd/encryption-templates',
             'etc': '/etc/wicd',
+            'log': '/var/log/wicd',
+            'loggroup': '',
+            'logperms': '0600',
             'networks': '/var/lib/wicd/configurations',
             'pidfile': '/var/run/wicd.pid',
             'postconnectscripts': '/etc/wicd/scripts/postconnect',
             'postdisconnectscripts': '/etc/wicd/scripts/postdisconnect',
             'preconnectscripts': '/etc/wicd/scripts/preconnect',
             'predisconnectscripts': '/etc/wicd/scripts/predisconnect',
-            'sbin': '/usr/sbin',
+            'python': 'python',
+            'revision': '',
             'translations': '/usr/share/locale',
             'varlib': '/var/lib/wicd',
-            'log': '/var/log/wicd/',
-            'loggroup': '',
-            'logperms': '0600',
-            'revision': '',
-            'wicdgroup': 'users',
-            'python': 'python'}
+            'wicdgroup': 'users'}
 SECTION = 'wicd'
 CFG_FILE = 'wicd.conf'
 
