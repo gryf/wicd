@@ -76,6 +76,7 @@ from wicd.curses.netentry_curses import WiredSettingsDialog
 # import logging
 # import logging.handler
 
+CFG.load()
 CURSES_REV = wicd.curses.__version__
 
 # Fix strings in wicd-curses
@@ -1294,7 +1295,7 @@ def main():
         if "DBus.Error.AccessDenied" in e.get_dbus_name():
             print(_('ERROR: wicd-curses was denied access to the wicd daemon: '
                     'please check that your user is in the "$A" group.')
-                  .replace('$A', '\033[1;34m' + CFG.wicd_group + '\033[0m'))
+                  .replace('$A', '\033[1;34m' + CFG.wicdgroup + '\033[0m'))
             sys.exit(1)
         else:
             raise

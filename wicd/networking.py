@@ -53,6 +53,7 @@ from wicd import misc
 from wicd.backend import BackendManager
 
 
+CFG.load()
 BACKEND = None
 BACKEND_MGR = BackendManager()
 

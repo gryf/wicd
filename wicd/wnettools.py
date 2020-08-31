@@ -46,6 +46,8 @@ from wicd import misc
 from wicd.misc import find_path
 
 
+CFG.load()
+
 # Regular expressions.
 _re_mode = (re.I | re.M | re.S)
 essid_pattern = re.compile('.*ESSID:"?(.*?)".*\n', _re_mode)

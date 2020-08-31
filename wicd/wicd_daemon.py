@@ -64,6 +64,7 @@ from wicd.logfile import ManagedStdio
 from wicd.configmanager import ConfigManager
 
 
+CFG.load()
 misc.RenameProcess("wicd")
 
 wireless_conf = os.path.join(CFG.etc, "wireless-settings.conf")
@@ -1902,14 +1903,14 @@ def run(argv):
         output = ManagedStdio(logpath)
         if os.path.exists(logpath):
             try:
-                os.chmod(logpath, int(CFG.log_perms, 8))
+                os.chmod(logpath, int(CFG.logperms, 8))
             except OSError:
-                print('unable to chmod log file to %s' % CFG.log_perms)
+                print('unable to chmod log file to %s' % CFG.logperms)
 
             try:
-                if CFG.log_group:
+                if CFG.loggroup:
                     import grp
-                    group = grp.getgrnam(CFG.log_group)
+                    group = grp.getgrnam(CFG.loggroup)
                     os.chown(logpath, 0, group[2])
             except OSError:
                 print('unable to chown log file to %s' % group[2])

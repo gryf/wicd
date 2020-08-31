@@ -30,6 +30,7 @@ def get_gettext():
     """Set up gettext for translations."""
     # Borrowed from an excellent post on how to do this at
     # http://www.learningpython.com/2006/12/03/translating-your-pythonpygtk-application/
+    CFG.load()
     local_path = CFG.translations
     langs = []
     osLanguage = os.environ.get('LANGUAGE', None)

@@ -42,6 +42,8 @@ from wicd.translations import _
 # wicd imports
 from wicd.config import CFG
 
+
+CFG.load()
 # Connection state constants
 NOT_CONNECTED = 0
 CONNECTING = 1
