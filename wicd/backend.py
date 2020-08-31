@@ -22,12 +22,16 @@ Manages and loads the pluggable backends for wicd.
 #   You should have received a copy of the GNU General Public License
 #   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
+import importlib
 import os
 
 import wicd.backends as bck
 
 
-BACKENDS = {x.split('_')[1]: x for x in dir(bck) if not x.startswith('__')}
+# TODO(gryf): change this, because it's ugly as hell
+BACKENDS = {x.split('_')[1][:-3]: x[:-3] for x in
+            os.listdir(os.path.dirname(bck.__file__))
+            if not x.startswith('__')}
 
 
 def fail(backend_name, reason):
@@ -98,7 +102,8 @@ class BackendManager(object):
 
         """
         try:
-            backend = BACKENDS[backend_name]
+            backend = importlib.import_module('.' + BACKENDS[backend_name],
+                                              'wicd.backends')
         except KeyError:
             return None
 
