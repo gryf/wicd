@@ -3,7 +3,7 @@
 # Distributed under the terms of the GNU General Public License v2
 
 WICD_DAEMON=/usr/bin/wicd
-WICD_PIDFILE=/run/wicd/wicd.pid
+WICD_PIDFILE=/run/wicd.pid
 
 depend() {
 	need dbus

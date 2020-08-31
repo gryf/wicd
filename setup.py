@@ -224,6 +224,7 @@ class configure(setuptools.Command):
         elif self.distro in ['gentoo']:
             self.init = '/etc/init.d/'
             self.initfile = 'data/init/gentoo/wicd'
+            self.pidfile = '/run/wicd.pid'
         elif self.distro in ['pld']:
             self.init = '/etc/rc.d/init.d/'
             self.initfile = 'data/init/pld/wicd'
