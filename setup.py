@@ -23,6 +23,7 @@ import os
 import json
 import re
 import configparser
+import pathlib
 import shutil
 import subprocess
 from distutils import log
@@ -64,7 +65,10 @@ data = []
 
 # path to the file to put in empty directories
 # fixes https://bugs.launchpad.net/wicd/+bug/503028
-empty_file = 'other/.empty_on_purpose'
+keep_file = '.keep'
+if not os.path.exists(keep_file):
+    pathlib.Path(keep_file).touch()
+
 
 # change to the directory setup.py is contained in
 os.chdir(os.path.abspath(os.path.split(__file__)[0]))
@@ -352,13 +356,13 @@ class install(_install.install):
             with open('wpath.json') as fobj:
                 wpath = config.Config(json.load(fobj))
 
-        data.extend([(wpath.log, [empty_file]),
-                     (wpath.networks, [empty_file]),
-                     (wpath.scripts, [empty_file]),
-                     (wpath.predisconnectscripts, [empty_file]),
-                     (wpath.postdisconnectscripts, [empty_file]),
-                     (wpath.preconnectscripts, [empty_file]),
-                     (wpath.postconnectscripts, [empty_file])])
+        data.extend([(wpath.log, [keep_file]),
+                     (wpath.networks, [keep_file]),
+                     (wpath.scripts, [keep_file]),
+                     (wpath.predisconnectscripts, [keep_file]),
+                     (wpath.postdisconnectscripts, [keep_file]),
+                     (wpath.preconnectscripts, [keep_file]),
+                     (wpath.postconnectscripts, [keep_file])])
 
         if os.path.exists('data/etc/wicd.conf'):
             data.append((wpath.etc, ['data/etc/wicd.conf']))
