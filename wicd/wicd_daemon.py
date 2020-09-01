@@ -1934,7 +1934,8 @@ def run(argv):
     child_pid = None
     if not no_poll:
         child_pid = Popen([CFG.python, "-O",
-                          os.path.join(CFG.daemon, "monitor.py")],
+                          os.path.join(os.path.dirname(__file__),
+                                       "monitor.py")],
                           shell=False, close_fds=True).pid
     atexit.register(on_exit, child_pid)
 

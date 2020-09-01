@@ -3,7 +3,6 @@ import os
 
 
 DEFAULTS = {'bin': '/usr/bin',
-            'daemon': '/usr/share/wicd/daemon',
             'encryption': '/etc/wicd/encryption-templates',
             'etc': '/etc/wicd',
             'log': '/var/log/wicd',
