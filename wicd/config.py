@@ -20,7 +20,7 @@ DEFAULTS = {'bin': '/usr/bin',
             'varlib': '/var/lib/wicd',
             'wicdgroup': 'users'}
 SECTION = 'wicd'
-CFG_FILE = 'wicd.conf'
+CFG_FILE = os.path.join(DEFAULTS['etc'], 'wicd.conf')
 
 
 class Config(dict):
@@ -35,14 +35,14 @@ class Config(dict):
         for name, path in DEFAULTS.items():
             self.parser.set(self.parser.default_section, name, path)
 
-    def load(self):
+    def load(self, cfg_file=CFG_FILE):
         """
         Try to load config from hardcoded location. At least, on proper
         installation, we need to have an entry point to look at. Most of the
         time distro package maintainers rely on defaults, since they are sane
         and mostly tested. Let's keep it up.
         """
-        self.parser.read(os.path.join(self.etc, CFG_FILE))
+        self.parser.read(cfg_file)
         if SECTION in self.parser.sections():
             for opt in self.parser.options(SECTION):
                 self[opt] = self.parser.get(SECTION, opt)
